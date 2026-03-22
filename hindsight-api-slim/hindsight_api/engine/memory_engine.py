@@ -39,7 +39,9 @@ from .operation_metadata import (
 
 # Context variable for current schema (async-safe, per-task isolation)
 # Note: default is None, actual default comes from config via get_current_schema()
-_current_schema: contextvars.ContextVar[str | None] = contextvars.ContextVar("current_schema", default=None)
+_current_schema: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "current_schema", default=None
+)
 
 
 def get_current_schema() -> str:
@@ -174,7 +176,12 @@ from .entity_resolver import EntityResolver
 from .llm_wrapper import LLMConfig, requires_api_key, sanitize_llm_output
 from .query_analyzer import QueryAnalyzer
 from .reflect import run_reflect_agent
-from .reflect.tools import tool_expand, tool_recall, tool_search_mental_models, tool_search_observations
+from .reflect.tools import (
+    tool_expand,
+    tool_recall,
+    tool_search_mental_models,
+    tool_search_observations,
+)
 from .response_models import (
     VALID_RECALL_FACT_TYPES,
     EntityObservation,
@@ -321,16 +328,22 @@ class MemoryEngine(MemoryEngineInterface):
 
         # Apply optimization flags from config if not explicitly provided
         self._skip_llm_verification = (
-            skip_llm_verification if skip_llm_verification is not None else config.skip_llm_verification
+            skip_llm_verification
+            if skip_llm_verification is not None
+            else config.skip_llm_verification
         )
-        self._lazy_reranker = lazy_reranker if lazy_reranker is not None else config.lazy_reranker
+        self._lazy_reranker = (
+            lazy_reranker if lazy_reranker is not None else config.lazy_reranker
+        )
 
         # Apply defaults from config
         db_url = db_url or config.database_url
         memory_llm_provider = memory_llm_provider or config.llm_provider
         memory_llm_api_key = memory_llm_api_key or config.llm_api_key
         if not memory_llm_api_key and requires_api_key(memory_llm_provider):
-            raise ValueError("LLM API key is required. Set HINDSIGHT_API_LLM_API_KEY environment variable.")
+            raise ValueError(
+                "LLM API key is required. Set HINDSIGHT_API_LLM_API_KEY environment variable."
+            )
         memory_llm_model = memory_llm_model or config.llm_model
         memory_llm_base_url = memory_llm_base_url or config.get_llm_base_url() or None
         # Track pg0 instance (if used)
@@ -357,10 +370,22 @@ class MemoryEngine(MemoryEngineInterface):
         # Connection pool (will be created in initialize())
         self._pool = None
         self._initialized = False
-        self._pool_min_size = pool_min_size if pool_min_size is not None else config.db_pool_min_size
-        self._pool_max_size = pool_max_size if pool_max_size is not None else config.db_pool_max_size
-        self._db_command_timeout = db_command_timeout if db_command_timeout is not None else config.db_command_timeout
-        self._db_acquire_timeout = db_acquire_timeout if db_acquire_timeout is not None else config.db_acquire_timeout
+        self._pool_min_size = (
+            pool_min_size if pool_min_size is not None else config.db_pool_min_size
+        )
+        self._pool_max_size = (
+            pool_max_size if pool_max_size is not None else config.db_pool_max_size
+        )
+        self._db_command_timeout = (
+            db_command_timeout
+            if db_command_timeout is not None
+            else config.db_command_timeout
+        )
+        self._db_acquire_timeout = (
+            db_acquire_timeout
+            if db_acquire_timeout is not None
+            else config.db_acquire_timeout
+        )
         self._run_migrations = run_migrations
         self._retain_entity_lookup = config.retain_entity_lookup
 
@@ -399,10 +424,16 @@ class MemoryEngine(MemoryEngineInterface):
 
         # Initialize per-operation LLM configs (fall back to default if not specified)
         # Retain LLM config - for fact extraction (benefits from strong structured output)
-        retain_provider = retain_llm_provider or config.retain_llm_provider or memory_llm_provider
-        retain_api_key = retain_llm_api_key or config.retain_llm_api_key or memory_llm_api_key
+        retain_provider = (
+            retain_llm_provider or config.retain_llm_provider or memory_llm_provider
+        )
+        retain_api_key = (
+            retain_llm_api_key or config.retain_llm_api_key or memory_llm_api_key
+        )
         retain_model = retain_llm_model or config.retain_llm_model or memory_llm_model
-        retain_base_url = retain_llm_base_url or config.retain_llm_base_url or memory_llm_base_url
+        retain_base_url = (
+            retain_llm_base_url or config.retain_llm_base_url or memory_llm_base_url
+        )
         # Apply provider-specific base URL defaults for retain
         if retain_base_url is None:
             if retain_provider.lower() == "groq":
@@ -420,10 +451,18 @@ class MemoryEngine(MemoryEngineInterface):
         )
 
         # Reflect LLM config - for think/observe operations (can use lighter models)
-        reflect_provider = reflect_llm_provider or config.reflect_llm_provider or memory_llm_provider
-        reflect_api_key = reflect_llm_api_key or config.reflect_llm_api_key or memory_llm_api_key
-        reflect_model = reflect_llm_model or config.reflect_llm_model or memory_llm_model
-        reflect_base_url = reflect_llm_base_url or config.reflect_llm_base_url or memory_llm_base_url
+        reflect_provider = (
+            reflect_llm_provider or config.reflect_llm_provider or memory_llm_provider
+        )
+        reflect_api_key = (
+            reflect_llm_api_key or config.reflect_llm_api_key or memory_llm_api_key
+        )
+        reflect_model = (
+            reflect_llm_model or config.reflect_llm_model or memory_llm_model
+        )
+        reflect_base_url = (
+            reflect_llm_base_url or config.reflect_llm_base_url or memory_llm_base_url
+        )
         # Apply provider-specific base URL defaults for reflect
         if reflect_base_url is None:
             if reflect_provider.lower() == "groq":
@@ -441,10 +480,26 @@ class MemoryEngine(MemoryEngineInterface):
         )
 
         # Consolidation LLM config - for mental model consolidation (can use efficient models)
-        consolidation_provider = consolidation_llm_provider or config.consolidation_llm_provider or memory_llm_provider
-        consolidation_api_key = consolidation_llm_api_key or config.consolidation_llm_api_key or memory_llm_api_key
-        consolidation_model = consolidation_llm_model or config.consolidation_llm_model or memory_llm_model
-        consolidation_base_url = consolidation_llm_base_url or config.consolidation_llm_base_url or memory_llm_base_url
+        consolidation_provider = (
+            consolidation_llm_provider
+            or config.consolidation_llm_provider
+            or memory_llm_provider
+        )
+        consolidation_api_key = (
+            consolidation_llm_api_key
+            or config.consolidation_llm_api_key
+            or memory_llm_api_key
+        )
+        consolidation_model = (
+            consolidation_llm_model
+            or config.consolidation_llm_model
+            or memory_llm_model
+        )
+        consolidation_base_url = (
+            consolidation_llm_base_url
+            or config.consolidation_llm_base_url
+            or memory_llm_base_url
+        )
         # Apply provider-specific base URL defaults for consolidation
         if consolidation_base_url is None:
             if consolidation_provider.lower() == "groq":
@@ -516,9 +571,13 @@ class MemoryEngine(MemoryEngineInterface):
 
         result = await validation_coro
         if not result.allowed:
-            raise OperationValidationError(result.reason or "Operation not allowed", result.status_code)
+            raise OperationValidationError(
+                result.reason or "Operation not allowed", result.status_code
+            )
 
-    async def _authenticate_tenant(self, request_context: "RequestContext | None") -> str:
+    async def _authenticate_tenant(
+        self, request_context: "RequestContext | None"
+    ) -> str:
         """
         Authenticate tenant and set schema in context variable.
 
@@ -630,7 +689,9 @@ class MemoryEngine(MemoryEngineInterface):
                         file_metadata["file_content_type"],
                     )
 
-        logger.info(f"[BATCH_RETAIN_TASK] Completed background batch retain for bank_id={bank_id}")
+        logger.info(
+            f"[BATCH_RETAIN_TASK] Completed background batch retain for bank_id={bank_id}"
+        )
 
     async def _handle_file_convert_retain(self, task_dict: dict[str, Any]):
         """
@@ -654,9 +715,13 @@ class MemoryEngine(MemoryEngineInterface):
         filename = task_dict.get("original_filename", "unknown")
 
         if not all([bank_id, storage_key, document_id]):
-            raise ValueError("bank_id, storage_key, and document_id are required for file_convert_retain task")
+            raise ValueError(
+                "bank_id, storage_key, and document_id are required for file_convert_retain task"
+            )
 
-        logger.info(f"[FILE_CONVERT_RETAIN] Starting for bank_id={bank_id}, document_id={document_id}, file={filename}")
+        logger.info(
+            f"[FILE_CONVERT_RETAIN] Starting for bank_id={bank_id}, document_id={document_id}, file={filename}"
+        )
 
         try:
             # Retrieve file from storage
@@ -689,7 +754,9 @@ class MemoryEngine(MemoryEngineInterface):
         # Fire file conversion hook (e.g., for Iris billing)
         if self._operation_validator:
             try:
-                from hindsight_api.extensions.operation_validator import FileConvertResult
+                from hindsight_api.extensions.operation_validator import (
+                    FileConvertResult,
+                )
                 from hindsight_api.models import RequestContext
 
                 convert_context = RequestContext(
@@ -709,7 +776,9 @@ class MemoryEngine(MemoryEngineInterface):
                     )
                 )
             except Exception as e:
-                logger.warning(f"[FILE_CONVERT_RETAIN] on_file_convert_complete hook failed: {e}")
+                logger.warning(
+                    f"[FILE_CONVERT_RETAIN] on_file_convert_complete hook failed: {e}"
+                )
 
         # Build retain task payload
         retain_contents = [
@@ -794,10 +863,14 @@ class MemoryEngine(MemoryEngineInterface):
         if config.file_delete_after_retain:
             try:
                 await self._file_storage.delete(storage_key)
-                logger.info(f"[FILE_CONVERT_RETAIN] Deleted file bytes for {storage_key} (conversion completed)")
+                logger.info(
+                    f"[FILE_CONVERT_RETAIN] Deleted file bytes for {storage_key} (conversion completed)"
+                )
             except Exception as e:
                 # Non-fatal - log and continue
-                logger.warning(f"[FILE_CONVERT_RETAIN] Failed to delete file {storage_key}: {e}")
+                logger.warning(
+                    f"[FILE_CONVERT_RETAIN] Failed to delete file {storage_key}: {e}"
+                )
 
     async def _handle_consolidation(self, task_dict: dict[str, Any]):
         """
@@ -834,7 +907,9 @@ class MemoryEngine(MemoryEngineInterface):
             operation_id=task_dict.get("operation_id"),
         )
 
-        logger.info(f"[CONSOLIDATION] bank={bank_id} completed: {result.get('memories_processed', 0)} processed")
+        logger.info(
+            f"[CONSOLIDATION] bank={bank_id} completed: {result.get('memories_processed', 0)} processed"
+        )
         return result
 
     async def _handle_refresh_mental_model(self, task_dict: dict[str, Any]):
@@ -854,9 +929,13 @@ class MemoryEngine(MemoryEngineInterface):
         mental_model_id = task_dict.get("mental_model_id")
 
         if not bank_id or not mental_model_id:
-            raise ValueError("bank_id and mental_model_id are required for refresh_mental_model task")
+            raise ValueError(
+                "bank_id and mental_model_id are required for refresh_mental_model task"
+            )
 
-        logger.info(f"[REFRESH_MENTAL_MODEL_TASK] Starting for bank_id={bank_id}, mental_model_id={mental_model_id}")
+        logger.info(
+            f"[REFRESH_MENTAL_MODEL_TASK] Starting for bank_id={bank_id}, mental_model_id={mental_model_id}"
+        )
 
         from hindsight_api.models import RequestContext
 
@@ -869,9 +948,13 @@ class MemoryEngine(MemoryEngineInterface):
         )
 
         # Get the current mental model to get source_query
-        mental_model = await self.get_mental_model(bank_id, mental_model_id, request_context=internal_context)
+        mental_model = await self.get_mental_model(
+            bank_id, mental_model_id, request_context=internal_context
+        )
         if not mental_model:
-            raise ValueError(f"Mental model {mental_model_id} not found in bank {bank_id}")
+            raise ValueError(
+                f"Mental model {mental_model_id} not found in bank {bank_id}"
+            )
 
         source_query = mental_model["source_query"]
 
@@ -885,7 +968,9 @@ class MemoryEngine(MemoryEngineInterface):
         trigger_data = mental_model.get("trigger") or {}
         fact_types = trigger_data.get("fact_types")
         exclude_mental_models = trigger_data.get("exclude_mental_models", False)
-        stored_exclude_ids: list[str] = trigger_data.get("exclude_mental_model_ids") or []
+        stored_exclude_ids: list[str] = (
+            trigger_data.get("exclude_mental_model_ids") or []
+        )
 
         # Run reflect to generate new content, excluding the mental model being refreshed
         # Always add self to excluded IDs to prevent circular reference
@@ -913,7 +998,9 @@ class MemoryEngine(MemoryEngineInterface):
                     serialized_facts.append(
                         {
                             "id": str(fact["id"]),
-                            "text": fact.get("text", fact.get("content", fact.get("name", ""))),
+                            "text": fact.get(
+                                "text", fact.get("content", fact.get("name", ""))
+                            ),
                             "type": fact_type,
                         }
                     )
@@ -944,7 +1031,9 @@ class MemoryEngine(MemoryEngineInterface):
 
         # Call post-operation hook if validator is configured
         if self._operation_validator:
-            from hindsight_api.extensions.operation_validator import MentalModelRefreshResult
+            from hindsight_api.extensions.operation_validator import (
+                MentalModelRefreshResult,
+            )
 
             # Count facts and mental models from based_on
             facts_used = 0
@@ -974,11 +1063,17 @@ class MemoryEngine(MemoryEngineInterface):
                 success=True,
             )
             try:
-                await self._operation_validator.on_mental_model_refresh_complete(result_ctx)
+                await self._operation_validator.on_mental_model_refresh_complete(
+                    result_ctx
+                )
             except Exception as hook_err:
-                logger.warning(f"Post-mental-model-refresh hook error (non-fatal): {hook_err}")
+                logger.warning(
+                    f"Post-mental-model-refresh hook error (non-fatal): {hook_err}"
+                )
 
-        logger.info(f"[REFRESH_MENTAL_MODEL_TASK] Completed for bank_id={bank_id}, mental_model_id={mental_model_id}")
+        logger.info(
+            f"[REFRESH_MENTAL_MODEL_TASK] Completed for bank_id={bank_id}, mental_model_id={mental_model_id}"
+        )
 
     async def execute_task(self, task_dict: dict[str, Any]):
         """
@@ -1063,9 +1158,13 @@ class MemoryEngine(MemoryEngineInterface):
             if task_type == "file_convert_retain":
                 # Non-retryable: mark as failed immediately.
                 # Conversion failures won't improve on retry (missing OCR, corrupted file, etc.)
-                logger.error(f"Not retrying task {task_type} (non-retryable), marking as failed")
+                logger.error(
+                    f"Not retrying task {task_type} (non-retryable), marking as failed"
+                )
                 if operation_id:
-                    await self._mark_operation_failed(operation_id, str(e), error_traceback)
+                    await self._mark_operation_failed(
+                        operation_id, str(e), error_traceback
+                    )
             else:
                 if task_type == "consolidation" and operation_id:
                     # Fire failure webhook (non-transactional — operation not yet marked failed;
@@ -1081,7 +1180,10 @@ class MemoryEngine(MemoryEngineInterface):
                 # Retryable: use RetryTaskAt if under the retry limit, else re-raise (poller marks failed)
                 retry_count = task_dict.get("_retry_count", 0)
                 if retry_count < 3:
-                    raise RetryTaskAt(retry_at=datetime.now(UTC) + timedelta(seconds=60), message=str(e))
+                    raise RetryTaskAt(
+                        retry_at=datetime.now(UTC) + timedelta(seconds=60),
+                        message=str(e),
+                    )
                 raise
 
     async def _fire_consolidation_webhook(
@@ -1099,12 +1201,22 @@ class MemoryEngine(MemoryEngineInterface):
         try:
             from datetime import datetime, timezone
 
-            from ..webhooks.models import ConsolidationEventData, WebhookEvent, WebhookEventType
+            from ..webhooks.models import (
+                ConsolidationEventData,
+                WebhookEvent,
+                WebhookEventType,
+            )
 
             data = ConsolidationEventData(
-                observations_created=result.get("observations_created") if result else None,
-                observations_updated=result.get("observations_updated") if result else None,
-                observations_deleted=result.get("observations_deleted") if result else None,
+                observations_created=(
+                    result.get("observations_created") if result else None
+                ),
+                observations_updated=(
+                    result.get("observations_updated") if result else None
+                ),
+                observations_deleted=(
+                    result.get("observations_deleted") if result else None
+                ),
                 error_message=error_message,
             )
             event = WebhookEvent(
@@ -1117,7 +1229,9 @@ class MemoryEngine(MemoryEngineInterface):
             )
             await self._webhook_manager.fire_event(event, schema=schema)
         except Exception as e:
-            logger.error(f"Failed to fire consolidation webhook for operation {operation_id}: {e}")
+            logger.error(
+                f"Failed to fire consolidation webhook for operation {operation_id}: {e}"
+            )
 
     def _build_retain_outbox_callback(
         self,
@@ -1166,7 +1280,9 @@ class MemoryEngine(MemoryEngineInterface):
             # retain_batch_async which is where _authenticate_tenant sets the schema).
             resolved_schema = schema or _current_schema.get()
             for event in events:
-                await webhook_manager.fire_event_with_conn(event, conn, schema=resolved_schema)
+                await webhook_manager.fire_event_with_conn(
+                    event, conn, schema=resolved_schema
+                )
 
         return _callback
 
@@ -1208,7 +1324,9 @@ class MemoryEngine(MemoryEngineInterface):
         raw_payload = task_dict["payload"]
         retry_count = task_dict.get("_retry_count", 0)
         operation_id: str | None = task_dict.get("_operation_id")
-        http_config = WebhookHttpConfig.model_validate(task_dict.get("http_config") or {})
+        http_config = WebhookHttpConfig.model_validate(
+            task_dict.get("http_config") or {}
+        )
 
         if isinstance(raw_payload, dict):
             payload_bytes = json.dumps(raw_payload).encode()
@@ -1221,7 +1339,9 @@ class MemoryEngine(MemoryEngineInterface):
             **http_config.headers,
         }
         if secret and self._webhook_manager:
-            headers["X-Hindsight-Signature"] = self._webhook_manager._sign_payload(secret, payload_bytes)
+            headers["X-Hindsight-Signature"] = self._webhook_manager._sign_payload(
+                secret, payload_bytes
+            )
 
         if self._http_client is None:
             raise RuntimeError("HTTP client not initialized")
@@ -1236,22 +1356,32 @@ class MemoryEngine(MemoryEngineInterface):
             if http_config.method.upper() == "GET":
                 response = await self._http_client.get(url, **request_kwargs)
             else:
-                response = await self._http_client.post(url, content=payload_bytes, **request_kwargs)
+                response = await self._http_client.post(
+                    url, content=payload_bytes, **request_kwargs
+                )
             response.raise_for_status()
             if operation_id:
-                await self._update_webhook_delivery_metadata(operation_id, response.status_code, response.text)
+                await self._update_webhook_delivery_metadata(
+                    operation_id, response.status_code, response.text
+                )
         except Exception as e:
             status_code = response.status_code if response is not None else None
             response_body = response.text if response is not None else None
             if operation_id:
-                await self._update_webhook_delivery_metadata(operation_id, status_code, response_body)
+                await self._update_webhook_delivery_metadata(
+                    operation_id, status_code, response_body
+                )
             if retry_count >= MAX_ATTEMPTS - 1:
                 logger.error(
                     f"webhook_delivery permanently_failed url={url} attempts={retry_count + 1} "
                     f"status_code={status_code} error={e}"
                 )
                 raise
-            delay = RETRY_DELAYS[retry_count] if retry_count < len(RETRY_DELAYS) else RETRY_DELAYS[-1]
+            delay = (
+                RETRY_DELAYS[retry_count]
+                if retry_count < len(RETRY_DELAYS)
+                else RETRY_DELAYS[-1]
+            )
             retry_at = datetime.now(UTC) + timedelta(seconds=delay)
             logger.warning(
                 f"webhook_delivery failed url={url} attempt={retry_count + 1}/{MAX_ATTEMPTS} "
@@ -1265,7 +1395,8 @@ class MemoryEngine(MemoryEngineInterface):
             pool = await self._get_pool()
             async with acquire_with_retry(pool) as conn:
                 await conn.execute(
-                    f"DELETE FROM {fq_table('async_operations')} WHERE operation_id = $1", uuid.UUID(operation_id)
+                    f"DELETE FROM {fq_table('async_operations')} WHERE operation_id = $1",
+                    uuid.UUID(operation_id),
                 )
         except Exception as e:
             logger.error(f"Failed to delete async operation record {operation_id}: {e}")
@@ -1288,7 +1419,9 @@ class MemoryEngine(MemoryEngineInterface):
             logger.error(f"Failed to check operation liveness {operation_id}: {e}")
             return True  # Assume alive on DB error to avoid false-positive aborts
 
-    async def _mark_operation_failed(self, operation_id: str, error_message: str, error_traceback: str):
+    async def _mark_operation_failed(
+        self, operation_id: str, error_message: str, error_traceback: str
+    ):
         """Helper to mark an operation as failed in the database.
 
         Also checks if this is a child operation and updates the parent if all siblings are done.
@@ -1298,7 +1431,9 @@ class MemoryEngine(MemoryEngineInterface):
             pool = await self._get_pool()
             # Truncate error message to avoid extremely long strings
             full_error = f"{error_message}\n\nTraceback:\n{error_traceback}"
-            truncated_error = full_error[:5000] if len(full_error) > 5000 else full_error
+            truncated_error = (
+                full_error[:5000] if len(full_error) > 5000 else full_error
+            )
 
             async with acquire_with_retry(pool) as conn:
                 async with conn.transaction():
@@ -1314,7 +1449,9 @@ class MemoryEngine(MemoryEngineInterface):
                         truncated_error,
                     )
                     if row is None:
-                        logger.info(f"Operation {operation_id} no longer exists (bank deleted), skipping mark-failed")
+                        logger.info(
+                            f"Operation {operation_id} no longer exists (bank deleted), skipping mark-failed"
+                        )
                         return
                     logger.info(f"Marked async operation as failed: {operation_id}")
 
@@ -1372,7 +1509,11 @@ class MemoryEngine(MemoryEngineInterface):
         same database transaction as the status update. This guarantees at-least-once delivery
         even if the process crashes immediately after committing.
         """
-        from ..webhooks.models import ConsolidationEventData, WebhookEvent, WebhookEventType
+        from ..webhooks.models import (
+            ConsolidationEventData,
+            WebhookEvent,
+            WebhookEventType,
+        )
 
         try:
             pool = await self._get_pool()
@@ -1398,9 +1539,15 @@ class MemoryEngine(MemoryEngineInterface):
                     # Queue webhook deliveries inside the same transaction
                     if self._webhook_manager:
                         data = ConsolidationEventData(
-                            observations_created=result.get("observations_created") if result else None,
-                            observations_updated=result.get("observations_updated") if result else None,
-                            observations_deleted=result.get("observations_deleted") if result else None,
+                            observations_created=(
+                                result.get("observations_created") if result else None
+                            ),
+                            observations_updated=(
+                                result.get("observations_updated") if result else None
+                            ),
+                            observations_deleted=(
+                                result.get("observations_deleted") if result else None
+                            ),
                             error_message=error_message,
                         )
                         event = WebhookEvent(
@@ -1411,9 +1558,13 @@ class MemoryEngine(MemoryEngineInterface):
                             timestamp=datetime.now(UTC),
                             data=data,
                         )
-                        await self._webhook_manager.fire_event_with_conn(event, conn, schema=schema)
+                        await self._webhook_manager.fire_event_with_conn(
+                            event, conn, schema=schema
+                        )
         except Exception as e:
-            logger.error(f"Failed to mark operation completed and fire webhook {operation_id}: {e}")
+            logger.error(
+                f"Failed to mark operation completed and fire webhook {operation_id}: {e}"
+            )
 
     async def _maybe_update_parent_operation(self, child_operation_id: str, conn):
         """Check if this is a child operation and update parent status if all siblings are done.
@@ -1439,7 +1590,9 @@ class MemoryEngine(MemoryEngineInterface):
             if not row:
                 return
 
-            result_metadata = json.loads(row["result_metadata"]) if row["result_metadata"] else {}
+            result_metadata = (
+                json.loads(row["result_metadata"]) if row["result_metadata"] else {}
+            )
             parent_operation_id = result_metadata.get("parent_operation_id")
 
             if not parent_operation_id:
@@ -1516,10 +1669,14 @@ class MemoryEngine(MemoryEngineInterface):
                     new_status,
                 )
 
-            logger.info(f"Updated parent operation {parent_operation_id} to status '{new_status}' (all children done)")
+            logger.info(
+                f"Updated parent operation {parent_operation_id} to status '{new_status}' (all children done)"
+            )
 
         except Exception as e:
-            logger.error(f"Failed to update parent operation for child {child_operation_id}: {e}")
+            logger.error(
+                f"Failed to update parent operation for child {child_operation_id}: {e}"
+            )
             # Re-raise to rollback the transaction
             raise
 
@@ -1553,7 +1710,9 @@ class MemoryEngine(MemoryEngineInterface):
             """Initialize embedding model."""
             # For local providers, run in thread pool to avoid blocking event loop
             if self.embeddings.provider_name == "local":
-                await loop.run_in_executor(None, lambda: asyncio.run(self.embeddings.initialize()))
+                await loop.run_in_executor(
+                    None, lambda: asyncio.run(self.embeddings.initialize())
+                )
             else:
                 await self.embeddings.initialize()
 
@@ -1562,7 +1721,9 @@ class MemoryEngine(MemoryEngineInterface):
             cross_encoder = self._cross_encoder_reranker.cross_encoder
             # For local providers, run in thread pool to avoid blocking event loop
             if cross_encoder.provider_name == "local":
-                await loop.run_in_executor(None, lambda: asyncio.run(cross_encoder.initialize()))
+                await loop.run_in_executor(
+                    None, lambda: asyncio.run(cross_encoder.initialize())
+                )
             else:
                 await cross_encoder.initialize()
             # Mark reranker as initialized
@@ -1590,7 +1751,8 @@ class MemoryEngine(MemoryEngineInterface):
                     self._reflect_llm_config.provider != self._llm_config.provider
                     or self._reflect_llm_config.model != self._llm_config.model
                 ) and (
-                    self._reflect_llm_config.provider != self._retain_llm_config.provider
+                    self._reflect_llm_config.provider
+                    != self._retain_llm_config.provider
                     or self._reflect_llm_config.model != self._retain_llm_config.model
                 )
                 if reflect_is_different:
@@ -1598,16 +1760,22 @@ class MemoryEngine(MemoryEngineInterface):
                 # Verify consolidation config if different from all others
                 consolidation_is_different = (
                     (
-                        self._consolidation_llm_config.provider != self._llm_config.provider
-                        or self._consolidation_llm_config.model != self._llm_config.model
+                        self._consolidation_llm_config.provider
+                        != self._llm_config.provider
+                        or self._consolidation_llm_config.model
+                        != self._llm_config.model
                     )
                     and (
-                        self._consolidation_llm_config.provider != self._retain_llm_config.provider
-                        or self._consolidation_llm_config.model != self._retain_llm_config.model
+                        self._consolidation_llm_config.provider
+                        != self._retain_llm_config.provider
+                        or self._consolidation_llm_config.model
+                        != self._retain_llm_config.model
                     )
                     and (
-                        self._consolidation_llm_config.provider != self._reflect_llm_config.provider
-                        or self._consolidation_llm_config.model != self._reflect_llm_config.model
+                        self._consolidation_llm_config.provider
+                        != self._reflect_llm_config.provider
+                        or self._consolidation_llm_config.model
+                        != self._reflect_llm_config.model
                     )
                 )
                 if consolidation_is_different:
@@ -1674,14 +1842,20 @@ class MemoryEngine(MemoryEngineInterface):
                 for tenant in tenants:
                     schema = tenant.schema
                     if schema:
-                        ensure_vector_extension(self.db_url, vector_extension=config.vector_extension, schema=schema)
+                        ensure_vector_extension(
+                            self.db_url,
+                            vector_extension=config.vector_extension,
+                            schema=schema,
+                        )
 
                 # Ensure text search columns/indexes match the configured extension
                 for tenant in tenants:
                     schema = tenant.schema
                     if schema:
                         ensure_text_search_extension(
-                            self.db_url, text_search_extension=config.text_search_extension, schema=schema
+                            self.db_url,
+                            text_search_extension=config.text_search_extension,
+                            schema=schema,
                         )
 
         logger.info(f"Connecting to PostgreSQL at {mask_network_location(self.db_url)}")
@@ -1696,7 +1870,9 @@ class MemoryEngine(MemoryEngineInterface):
             try:
                 await conn.execute("SET hnsw.ef_search = 200")
             except Exception:
-                logger.debug("Could not set hnsw.ef_search — extension may not support it")
+                logger.debug(
+                    "Could not set hnsw.ef_search — extension may not support it"
+                )
 
         self._pool = await asyncpg.create_pool(
             self.db_url,
@@ -1717,7 +1893,9 @@ class MemoryEngine(MemoryEngineInterface):
         # Initialize config resolver for hierarchical configuration
         from ..config_resolver import ConfigResolver
 
-        self._config_resolver = ConfigResolver(pool=self._pool, tenant_extension=self._tenant_extension)
+        self._config_resolver = ConfigResolver(
+            pool=self._pool, tenant_extension=self._tenant_extension
+        )
         logger.debug("Config resolver initialized for hierarchical configuration")
 
         # Initialize file storage
@@ -1743,10 +1921,14 @@ class MemoryEngine(MemoryEngineInterface):
         iris_token = config.file_parser_iris_token
         iris_org_id = config.file_parser_iris_org_id
         if iris_token and iris_org_id:
-            self._parser_registry.register(IrisParser(token=iris_token, org_id=iris_org_id))
+            self._parser_registry.register(
+                IrisParser(token=iris_token, org_id=iris_org_id)
+            )
             logger.debug("Registered iris parser")
         else:
-            logger.debug("Iris parser not registered (VECTORIZE_TOKEN or VECTORIZE_ORG_ID not set)")
+            logger.debug(
+                "Iris parser not registered (VECTORIZE_TOKEN or VECTORIZE_ORG_ID not set)"
+            )
 
         # Initialize webhook manager
         from ..webhooks import WebhookManager
@@ -1915,7 +2097,11 @@ class MemoryEngine(MemoryEngineInterface):
         from hindsight_api.models import RequestContext as RC
 
         ctx = request_context if request_context is not None else RC()
-        return asyncio.run(self.retain_async(bank_id, content, context, event_date, request_context=ctx))
+        return asyncio.run(
+            self.retain_async(
+                bank_id, content, context, event_date, request_context=ctx
+            )
+        )
 
     async def retain_async(
         self,
@@ -2040,7 +2226,9 @@ class MemoryEngine(MemoryEngineInterface):
         await self._authenticate_tenant(request_context)
 
         # Validate operation if validator is configured
-        contents_copy = [dict(c) for c in contents]  # Convert TypedDict to regular dict for extension
+        contents_copy = [
+            dict(c) for c in contents
+        ]  # Convert TypedDict to regular dict for extension
         if self._operation_validator:
             from hindsight_api.extensions import RetainContext
 
@@ -2052,7 +2240,9 @@ class MemoryEngine(MemoryEngineInterface):
                 fact_type_override=fact_type_override,
                 confidence_score=confidence_score,
             )
-            await self._validate_operation(self._operation_validator.validate_retain(ctx))
+            await self._validate_operation(
+                self._operation_validator.validate_retain(ctx)
+            )
 
         # Apply batch-level document_id to contents that don't have their own (backwards compatibility)
         if document_id:
@@ -2062,11 +2252,15 @@ class MemoryEngine(MemoryEngineInterface):
 
         # Validate no duplicate document_ids in the batch
         # Having duplicate document_ids causes race conditions in document upserts during parallel processing
-        doc_ids = [item.get("document_id") for item in contents if item.get("document_id")]
+        doc_ids = [
+            item.get("document_id") for item in contents if item.get("document_id")
+        ]
         if len(doc_ids) != len(set(doc_ids)):
             from collections import Counter
 
-            duplicates = [doc_id for doc_id, count in Counter(doc_ids).items() if count > 1]
+            duplicates = [
+                doc_id for doc_id, count in Counter(doc_ids).items() if count > 1
+            ]
             raise ValueError(
                 f"Batch contains duplicate document_ids: {duplicates}. "
                 f"Each content item in a batch must have a unique document_id to avoid race conditions."
@@ -2096,7 +2290,10 @@ class MemoryEngine(MemoryEngineInterface):
 
                 # If adding this item would exceed the limit, start a new batch
                 # (unless current batch is empty - then we must include it even if it's large)
-                if current_batch and current_batch_tokens + item_tokens > tokens_per_batch:
+                if (
+                    current_batch
+                    and current_batch_tokens + item_tokens > tokens_per_batch
+                ):
                     sub_batches.append(current_batch)
                     current_batch = [item]
                     current_batch_tokens = item_tokens
@@ -2108,7 +2305,9 @@ class MemoryEngine(MemoryEngineInterface):
             if current_batch:
                 sub_batches.append(current_batch)
 
-            logger.info(f"Split into {len(sub_batches)} sub-batches: {[len(b) for b in sub_batches]} items each")
+            logger.info(
+                f"Split into {len(sub_batches)} sub-batches: {[len(b) for b in sub_batches]} items each"
+            )
 
             # Process each sub-batch
             all_results = []
@@ -2122,7 +2321,9 @@ class MemoryEngine(MemoryEngineInterface):
                         return all_results, total_usage
                     return all_results
 
-                sub_batch_tokens = sum(count_tokens(item.get("content", "")) for item in sub_batch)
+                sub_batch_tokens = sum(
+                    count_tokens(item.get("content", "")) for item in sub_batch
+                )
                 logger.info(
                     f"Processing sub-batch {i}/{len(sub_batches)}: {len(sub_batch)} items, {sub_batch_tokens:,} tokens"
                 )
@@ -2191,13 +2392,19 @@ class MemoryEngine(MemoryEngineInterface):
 
         # Trigger consolidation as a tracked async operation if enabled
         # Resolve bank-specific config to check if observations are enabled for this bank
-        config = await self._config_resolver.resolve_full_config(bank_id, request_context)
+        config = await self._config_resolver.resolve_full_config(
+            bank_id, request_context
+        )
         if config.enable_observations:
             try:
-                await self.submit_async_consolidation(bank_id=bank_id, request_context=request_context)
+                await self.submit_async_consolidation(
+                    bank_id=bank_id, request_context=request_context
+                )
             except Exception as e:
                 # Log but don't fail the retain - consolidation is non-critical
-                logger.warning(f"Failed to submit consolidation task for bank {bank_id}: {e}")
+                logger.warning(
+                    f"Failed to submit consolidation task for bank {bank_id}: {e}"
+                )
 
         if return_usage:
             return result, total_usage
@@ -2246,7 +2453,9 @@ class MemoryEngine(MemoryEngineInterface):
             pool = await self._get_pool()
 
             # Resolve bank-specific config for this operation
-            resolved_config = await self._config_resolver.resolve_full_config(bank_id, request_context)
+            resolved_config = await self._config_resolver.resolve_full_config(
+                bank_id, request_context
+            )
 
             # Apply strategy overrides: explicit strategy > bank default strategy
             from hindsight_api.config_resolver import apply_strategy
@@ -2420,7 +2629,9 @@ class MemoryEngine(MemoryEngineInterface):
                 include_chunks=include_chunks,
                 max_chunk_tokens=max_chunk_tokens,
             )
-            await self._validate_operation(self._operation_validator.validate_recall(ctx))
+            await self._validate_operation(
+                self._operation_validator.validate_recall(ctx)
+            )
 
         # Map budget enum to thinking_budget number (default to MID if None)
         budget_mapping = {Budget.LOW: 100, Budget.MID: 300, Budget.HIGH: 1000}
@@ -2430,7 +2641,9 @@ class MemoryEngine(MemoryEngineInterface):
         # Log recall start with tags if present (skip if quiet mode for internal operations)
         if not _quiet:
             tags_info = f", tags={tags} ({tags_match})" if tags else ""
-            logger.info(f"[RECALL {bank_id[:8]}] Starting recall for query: {query[:50]}...{tags_info}")
+            logger.info(
+                f"[RECALL {bank_id[:8]}] Starting recall for query: {query[:50]}...{tags_info}"
+            )
 
         # Create parent span for recall operation
         from ..tracing import get_tracer
@@ -2485,7 +2698,10 @@ class MemoryEngine(MemoryEngineInterface):
                         is_connection_error = (
                             isinstance(e, asyncpg.TooManyConnectionsError)
                             or isinstance(e, asyncpg.CannotConnectNowError)
-                            or (isinstance(e, asyncpg.PostgresError) and "connection" in str(e).lower())
+                            or (
+                                isinstance(e, asyncpg.PostgresError)
+                                and "connection" in str(e).lower()
+                            )
                         )
 
                         if is_connection_error and attempt < max_retries:
@@ -2500,7 +2716,9 @@ class MemoryEngine(MemoryEngineInterface):
                             # Not a connection error or out of retries - call post-hook and raise
                             error_msg = str(e)
                             if self._operation_validator:
-                                from hindsight_api.extensions.operation_validator import RecallResult
+                                from hindsight_api.extensions.operation_validator import (
+                                    RecallResult,
+                                )
 
                                 result_ctx = RecallResult(
                                     bank_id=bank_id,
@@ -2520,15 +2738,23 @@ class MemoryEngine(MemoryEngineInterface):
                                     error=error_msg,
                                 )
                                 try:
-                                    await self._operation_validator.on_recall_complete(result_ctx)
+                                    await self._operation_validator.on_recall_complete(
+                                        result_ctx
+                                    )
                                 except Exception as hook_err:
-                                    logger.warning(f"Post-recall hook error (non-fatal): {hook_err}")
+                                    logger.warning(
+                                        f"Post-recall hook error (non-fatal): {hook_err}"
+                                    )
                             raise
                 else:
                     # Exceeded max retries
-                    error_msg = "Exceeded maximum retries for search due to connection errors."
+                    error_msg = (
+                        "Exceeded maximum retries for search due to connection errors."
+                    )
                     if self._operation_validator:
-                        from hindsight_api.extensions.operation_validator import RecallResult
+                        from hindsight_api.extensions.operation_validator import (
+                            RecallResult,
+                        )
 
                         result_ctx = RecallResult(
                             bank_id=bank_id,
@@ -2548,9 +2774,13 @@ class MemoryEngine(MemoryEngineInterface):
                             error=error_msg,
                         )
                         try:
-                            await self._operation_validator.on_recall_complete(result_ctx)
+                            await self._operation_validator.on_recall_complete(
+                                result_ctx
+                            )
                         except Exception as hook_err:
-                            logger.warning(f"Post-recall hook error (non-fatal): {hook_err}")
+                            logger.warning(
+                                f"Post-recall hook error (non-fatal): {hook_err}"
+                            )
                     raise Exception(error_msg)
 
             # Call post-operation hook for success
@@ -2637,7 +2867,11 @@ class MemoryEngine(MemoryEngineInterface):
         from .search.tracer import SearchTracer
 
         tracer = (
-            SearchTracer(query, thinking_budget, max_tokens, tags=tags, tags_match=tags_match) if enable_trace else None
+            SearchTracer(
+                query, thinking_budget, max_tokens, tags=tags, tags_match=tags_match
+            )
+            if enable_trace
+            else None
         )
         if tracer:
             tracer.start()
@@ -2667,9 +2901,13 @@ class MemoryEngine(MemoryEngineInterface):
             embedding_span.set_attribute("hindsight.query", query[:100])
 
             try:
-                query_embedding = embedding_utils.generate_embedding(self.embeddings, query)
+                query_embedding = embedding_utils.generate_embedding(
+                    self.embeddings, query
+                )
                 step_duration = time.time() - step_start
-                log_buffer.append(f"  [1] Generate query embedding: {step_duration:.3f}s")
+                log_buffer.append(
+                    f"  [1] Generate query embedding: {step_duration:.3f}s"
+                )
             finally:
                 embedding_span.end()
 
@@ -2701,7 +2939,9 @@ class MemoryEngine(MemoryEngineInterface):
                 # Run optimized retrieval with connection budget
                 config = get_config()
                 effective_connection_budget = (
-                    connection_budget if connection_budget is not None else config.recall_connection_budget
+                    connection_budget
+                    if connection_budget is not None
+                    else config.recall_connection_budget
                 )
                 async with budgeted_operation(
                     max_connections=effective_connection_budget,
@@ -2759,7 +2999,9 @@ class MemoryEngine(MemoryEngineInterface):
                     temporal_results.extend(retrieval_result.temporal)
                 # Track max timing for each method (since they run in parallel across fact types)
                 for method, duration in retrieval_result.timings.items():
-                    aggregated_timings[method] = max(aggregated_timings.get(method, 0.0), duration)
+                    aggregated_timings[method] = max(
+                        aggregated_timings.get(method, 0.0), duration
+                    )
                 # Capture temporal constraint (same across all fact types)
                 if retrieval_result.temporal_constraint:
                     detected_temporal_constraint = retrieval_result.temporal_constraint
@@ -2770,12 +3012,24 @@ class MemoryEngine(MemoryEngineInterface):
 
             # Sort combined results by score (descending) so higher-scored results
             # get better ranks in the trace, regardless of fact type
-            semantic_results.sort(key=lambda r: r.similarity if hasattr(r, "similarity") else 0, reverse=True)
-            bm25_results.sort(key=lambda r: r.bm25_score if hasattr(r, "bm25_score") else 0, reverse=True)
-            graph_results.sort(key=lambda r: r.activation if hasattr(r, "activation") else 0, reverse=True)
+            semantic_results.sort(
+                key=lambda r: r.similarity if hasattr(r, "similarity") else 0,
+                reverse=True,
+            )
+            bm25_results.sort(
+                key=lambda r: r.bm25_score if hasattr(r, "bm25_score") else 0,
+                reverse=True,
+            )
+            graph_results.sort(
+                key=lambda r: r.activation if hasattr(r, "activation") else 0,
+                reverse=True,
+            )
             if temporal_results:
                 temporal_results.sort(
-                    key=lambda r: r.combined_score if hasattr(r, "combined_score") else 0, reverse=True
+                    key=lambda r: (
+                        r.combined_score if hasattr(r, "combined_score") else 0
+                    ),
+                    reverse=True,
                 )
 
             retrieval_duration = time.time() - retrieval_start
@@ -2793,7 +3047,9 @@ class MemoryEngine(MemoryEngineInterface):
             if detected_temporal_constraint:
                 start_dt, end_dt = detected_temporal_constraint
                 temporal_count = len(temporal_results) if temporal_results else 0
-                timing_parts.append(f"temporal={temporal_count}({aggregated_timings['temporal']:.3f}s)")
+                timing_parts.append(
+                    f"temporal={temporal_count}({aggregated_timings['temporal']:.3f}s)"
+                )
                 temporal_info = f" | temporal_range={start_dt.strftime('%Y-%m-%d')} to {end_dt.strftime('%Y-%m-%d')}"
             log_buffer.append(
                 f"  [2] Parallel retrieval ({len(fact_type)} fact_types): {', '.join(timing_parts)} in {parallel_duration:.3f}s{temporal_info}"
@@ -2802,7 +3058,9 @@ class MemoryEngine(MemoryEngineInterface):
             # Log graph retriever timing breakdown if available
             if all_mpfp_timings:
                 retriever_name = get_default_graph_retriever().name.upper()
-                mpfp_total = all_mpfp_timings[0]  # Take first fact type's timing as representative
+                mpfp_total = all_mpfp_timings[
+                    0
+                ]  # Take first fact type's timing as representative
                 mpfp_parts = [
                     f"db_queries={mpfp_total.db_queries}",
                     f"edge_load={mpfp_total.edge_load_time:.3f}s",
@@ -2893,8 +3151,12 @@ class MemoryEngine(MemoryEngineInterface):
                         )
 
                 # Record entry points (from semantic results) for legacy graph view
-                for rank, retrieval in enumerate(semantic_results[:10], start=1):  # Top 10 as entry points
-                    tracer.add_entry_point(retrieval.id, retrieval.text, retrieval.similarity or 0.0, rank)
+                for rank, retrieval in enumerate(
+                    semantic_results[:10], start=1
+                ):  # Top 10 as entry points
+                    tracer.add_entry_point(
+                        retrieval.id, retrieval.text, retrieval.similarity or 0.0, rank
+                    )
 
                 tracer.add_phase_metric(
                     "parallel_retrieval",
@@ -2903,7 +3165,9 @@ class MemoryEngine(MemoryEngineInterface):
                         "semantic_count": len(semantic_results),
                         "bm25_count": len(bm25_results),
                         "graph_count": len(graph_results),
-                        "temporal_count": len(temporal_results) if temporal_results else 0,
+                        "temporal_count": (
+                            len(temporal_results) if temporal_results else 0
+                        ),
                     },
                 )
                 # Also expose each retrieval method as its own phase so
@@ -2921,33 +3185,53 @@ class MemoryEngine(MemoryEngineInterface):
             fusion_span.set_attribute("hindsight.semantic_count", len(semantic_results))
             fusion_span.set_attribute("hindsight.bm25_count", len(bm25_results))
             fusion_span.set_attribute("hindsight.graph_count", len(graph_results))
-            fusion_span.set_attribute("hindsight.temporal_count", len(temporal_results) if temporal_results else 0)
+            fusion_span.set_attribute(
+                "hindsight.temporal_count",
+                len(temporal_results) if temporal_results else 0,
+            )
 
             try:
                 # Merge 3 or 4 result lists depending on temporal constraint
                 if temporal_results:
                     merged_candidates = reciprocal_rank_fusion(
-                        [semantic_results, bm25_results, graph_results, temporal_results]
+                        [
+                            semantic_results,
+                            bm25_results,
+                            graph_results,
+                            temporal_results,
+                        ]
                     )
                 else:
-                    merged_candidates = reciprocal_rank_fusion([semantic_results, bm25_results, graph_results])
+                    merged_candidates = reciprocal_rank_fusion(
+                        [semantic_results, bm25_results, graph_results]
+                    )
 
                 step_duration = time.time() - step_start
                 log_buffer.append(
                     f"  [3] RRF merge: {len(merged_candidates)} unique candidates in {step_duration:.3f}s"
                 )
             finally:
-                fusion_span.set_attribute("hindsight.merged_count", len(merged_candidates))
+                fusion_span.set_attribute(
+                    "hindsight.merged_count", len(merged_candidates)
+                )
                 fusion_span.end()
 
             if tracer:
                 # Convert MergedCandidate to old tuple format for tracer
                 tracer_merged = [
-                    (mc.id, mc.retrieval.__dict__, {"rrf_score": mc.rrf_score, **mc.source_ranks})
+                    (
+                        mc.id,
+                        mc.retrieval.__dict__,
+                        {"rrf_score": mc.rrf_score, **mc.source_ranks},
+                    )
                     for mc in merged_candidates
                 ]
                 tracer.add_rrf_merged(tracer_merged)
-                tracer.add_phase_metric("rrf_merge", step_duration, {"candidates_merged": len(merged_candidates)})
+                tracer.add_phase_metric(
+                    "rrf_merge",
+                    step_duration,
+                    {"candidates_merged": len(merged_candidates)},
+                )
 
             # Step 4: Rerank using cross-encoder (MergedCandidate -> ScoredResult)
             step_start = time.time()
@@ -2955,7 +3239,9 @@ class MemoryEngine(MemoryEngineInterface):
 
             rerank_span = tracer_otel.start_span("hindsight.recall_rerank")
             rerank_span.set_attribute("hindsight.bank_id", bank_id)
-            rerank_span.set_attribute("hindsight.candidates_count", len(merged_candidates))
+            rerank_span.set_attribute(
+                "hindsight.candidates_count", len(merged_candidates)
+            )
 
             scored_results: list = []
             pre_filtered_count = 0
@@ -2969,21 +3255,31 @@ class MemoryEngine(MemoryEngineInterface):
                 if len(merged_candidates) > reranker_max_candidates:
                     # Sort by RRF score and take top candidates
                     merged_candidates.sort(key=lambda mc: mc.rrf_score, reverse=True)
-                    pre_filtered_count = len(merged_candidates) - reranker_max_candidates
+                    pre_filtered_count = (
+                        len(merged_candidates) - reranker_max_candidates
+                    )
                     merged_candidates = merged_candidates[:reranker_max_candidates]
 
                 # Rerank using cross-encoder
-                scored_results = await reranker_instance.rerank(query, merged_candidates)
+                scored_results = await reranker_instance.rerank(
+                    query, merged_candidates
+                )
 
                 step_duration = time.time() - step_start
-                pre_filter_note = f" (pre-filtered {pre_filtered_count})" if pre_filtered_count > 0 else ""
+                pre_filter_note = (
+                    f" (pre-filtered {pre_filtered_count})"
+                    if pre_filtered_count > 0
+                    else ""
+                )
                 log_buffer.append(
                     f"  [4] Reranking: {len(scored_results)} candidates scored in {step_duration:.3f}s{pre_filter_note}"
                 )
             finally:
                 rerank_span.set_attribute("hindsight.scored_count", len(scored_results))
                 if pre_filtered_count > 0:
-                    rerank_span.set_attribute("hindsight.pre_filtered_count", pre_filtered_count)
+                    rerank_span.set_attribute(
+                        "hindsight.pre_filtered_count", pre_filtered_count
+                    )
                 rerank_span.end()
 
             # Step 4.5: Combine cross-encoder score with retrieval signals via multiplicative boosts.
@@ -2991,20 +3287,29 @@ class MemoryEngine(MemoryEngineInterface):
             if scored_results:
                 apply_combined_scoring(scored_results, now=utcnow())
                 scored_results.sort(key=lambda x: x.weight, reverse=True)
-                log_buffer.append("  [4.6] Combined scoring: ce * recency_boost(0.2) * temporal_boost(0.2)")
+                log_buffer.append(
+                    "  [4.6] Combined scoring: ce * recency_boost(0.2) * temporal_boost(0.2)"
+                )
 
             # Add reranked results to tracer AFTER combined scoring (so normalized values are included)
             if tracer:
                 results_dict = [sr.to_dict() for sr in scored_results]
                 tracer_merged = [
-                    (mc.id, mc.retrieval.__dict__, {"rrf_score": mc.rrf_score, **mc.source_ranks})
+                    (
+                        mc.id,
+                        mc.retrieval.__dict__,
+                        {"rrf_score": mc.rrf_score, **mc.source_ranks},
+                    )
                     for mc in merged_candidates
                 ]
                 tracer.add_reranked(results_dict, tracer_merged)
                 tracer.add_phase_metric(
                     "reranking",
                     step_duration,
-                    {"reranker_type": "cross-encoder", "candidates_reranked": len(scored_results)},
+                    {
+                        "reranker_type": "cross-encoder",
+                        "candidates_reranked": len(scored_results),
+                    },
                 )
 
             # Step 5: Truncate to thinking_budget * 2 for token filtering
@@ -3098,15 +3403,21 @@ class MemoryEngine(MemoryEngineInterface):
                         if total_chunk_tokens + chunk_tokens > max_chunk_tokens:
                             remaining_tokens = max_chunk_tokens - total_chunk_tokens
                             if remaining_tokens > 0:
-                                truncated_text = encoding.decode(encoding.encode(chunk_text)[:remaining_tokens])
+                                truncated_text = encoding.decode(
+                                    encoding.encode(chunk_text)[:remaining_tokens]
+                                )
                                 chunks_dict[chunk_id] = ChunkInfo(
-                                    chunk_text=truncated_text, chunk_index=row["chunk_index"], truncated=True
+                                    chunk_text=truncated_text,
+                                    chunk_index=row["chunk_index"],
+                                    truncated=True,
                                 )
                                 total_chunk_tokens = max_chunk_tokens
                             break
                         else:
                             chunks_dict[chunk_id] = ChunkInfo(
-                                chunk_text=chunk_text, chunk_index=row["chunk_index"], truncated=False
+                                chunk_text=chunk_text,
+                                chunk_index=row["chunk_index"],
+                                truncated=False,
                             )
                             total_chunk_tokens += chunk_tokens
 
@@ -3115,7 +3426,9 @@ class MemoryEngine(MemoryEngineInterface):
 
             # Convert to dict for token filtering (backward compatibility)
             top_dicts = [sr.to_dict() for sr in top_scored]
-            filtered_dicts, total_tokens = self._filter_by_token_budget(top_dicts, max_tokens)
+            filtered_dicts, total_tokens = self._filter_by_token_budget(
+                top_dicts, max_tokens
+            )
 
             # Convert back to list of IDs and filter scored_results
             filtered_ids = {d["id"] for d in filtered_dicts}
@@ -3130,7 +3443,11 @@ class MemoryEngine(MemoryEngineInterface):
                 tracer.add_phase_metric(
                     "token_filtering",
                     step_duration,
-                    {"results_selected": len(top_scored), "tokens_used": total_tokens, "max_tokens": max_tokens},
+                    {
+                        "results_selected": len(top_scored),
+                        "tokens_used": total_tokens,
+                        "max_tokens": max_tokens,
+                    },
                 )
 
             # Record visits for all retrieved nodes
@@ -3141,7 +3458,9 @@ class MemoryEngine(MemoryEngineInterface):
                         text=sr.retrieval.text,
                         context=sr.retrieval.context or "",
                         event_date=sr.retrieval.occurred_start,
-                        is_entry_point=(sr.id in [ep.node_id for ep in tracer.entry_points]),
+                        is_entry_point=(
+                            sr.id in [ep.node_id for ep in tracer.entry_points]
+                        ),
                         parent_node_id=None,  # In parallel retrieval, there's no clear parent
                         link_type=None,
                         link_weight=None,
@@ -3158,7 +3477,9 @@ class MemoryEngine(MemoryEngineInterface):
                 ft = sr.retrieval.fact_type
                 fact_type_counts[ft] = fact_type_counts.get(ft, 0) + 1
 
-            fact_type_summary = ", ".join([f"{ft}={count}" for ft, count in sorted(fact_type_counts.items())])
+            fact_type_summary = ", ".join(
+                [f"{ft}={count}" for ft, count in sorted(fact_type_counts.items())]
+            )
 
             # Convert ScoredResult to dicts with ISO datetime strings
             top_results_dicts = []
@@ -3168,25 +3489,37 @@ class MemoryEngine(MemoryEngineInterface):
                 if result_dict.get("occurred_start"):
                     occurred_start = result_dict["occurred_start"]
                     result_dict["occurred_start"] = (
-                        occurred_start.isoformat() if hasattr(occurred_start, "isoformat") else occurred_start
+                        occurred_start.isoformat()
+                        if hasattr(occurred_start, "isoformat")
+                        else occurred_start
                     )
                 if result_dict.get("occurred_end"):
                     occurred_end = result_dict["occurred_end"]
                     result_dict["occurred_end"] = (
-                        occurred_end.isoformat() if hasattr(occurred_end, "isoformat") else occurred_end
+                        occurred_end.isoformat()
+                        if hasattr(occurred_end, "isoformat")
+                        else occurred_end
                     )
                 if result_dict.get("mentioned_at"):
                     mentioned_at = result_dict["mentioned_at"]
                     result_dict["mentioned_at"] = (
-                        mentioned_at.isoformat() if hasattr(mentioned_at, "isoformat") else mentioned_at
+                        mentioned_at.isoformat()
+                        if hasattr(mentioned_at, "isoformat")
+                        else mentioned_at
                     )
                 top_results_dicts.append(result_dict)
 
             # Fetch source facts for observation-type results (mirrors chunks pattern)
-            source_fact_ids_by_obs: dict[str, list[str]] = {}  # obs_id -> [source_id, ...]
+            source_fact_ids_by_obs: dict[str, list[str]] = (
+                {}
+            )  # obs_id -> [source_id, ...]
             source_facts_dict: dict[str, MemoryFact] | None = None
             if include_source_facts:
-                observation_ids = [uuid.UUID(sr.id) for sr in top_scored if sr.retrieval.fact_type == "observation"]
+                observation_ids = [
+                    uuid.UUID(sr.id)
+                    for sr in top_scored
+                    if sr.retrieval.fact_type == "observation"
+                ]
                 if observation_ids:
                     async with acquire_with_retry(pool) as sf_conn:
                         # Fetch source_memory_ids for all observation results
@@ -3204,7 +3537,9 @@ class MemoryEngine(MemoryEngineInterface):
                         source_ids_ordered: list[str] = []
                         for obs_row in obs_rows:
                             obs_id = str(obs_row["id"])
-                            sids = [str(s) for s in (obs_row["source_memory_ids"] or [])]
+                            sids = [
+                                str(s) for s in (obs_row["source_memory_ids"] or [])
+                            ]
                             source_fact_ids_by_obs[obs_id] = sids
                             for sid in sids:
                                 if sid not in seen_source_ids:
@@ -3235,11 +3570,25 @@ class MemoryEngine(MemoryEngineInterface):
                                     text=r["text"],
                                     fact_type=r["fact_type"],
                                     context=r["context"],
-                                    occurred_start=r["occurred_start"].isoformat() if r["occurred_start"] else None,
-                                    occurred_end=r["occurred_end"].isoformat() if r["occurred_end"] else None,
-                                    mentioned_at=r["mentioned_at"].isoformat() if r["mentioned_at"] else None,
+                                    occurred_start=(
+                                        r["occurred_start"].isoformat()
+                                        if r["occurred_start"]
+                                        else None
+                                    ),
+                                    occurred_end=(
+                                        r["occurred_end"].isoformat()
+                                        if r["occurred_end"]
+                                        else None
+                                    ),
+                                    mentioned_at=(
+                                        r["mentioned_at"].isoformat()
+                                        if r["mentioned_at"]
+                                        else None
+                                    ),
                                     document_id=r["document_id"],
-                                    chunk_id=str(r["chunk_id"]) if r["chunk_id"] else None,
+                                    chunk_id=(
+                                        str(r["chunk_id"]) if r["chunk_id"] else None
+                                    ),
                                     tags=r["tags"] or None,
                                 )
 
@@ -3253,11 +3602,16 @@ class MemoryEngine(MemoryEngineInterface):
                                             continue
                                         r = source_row_by_id[sid]
                                         fact_tokens = len(encoding.encode(r["text"]))
-                                        if obs_tokens + fact_tokens > max_source_facts_tokens_per_observation:
+                                        if (
+                                            obs_tokens + fact_tokens
+                                            > max_source_facts_tokens_per_observation
+                                        ):
                                             break
                                         obs_tokens += fact_tokens
                                         if sid not in source_facts_dict:
-                                            source_facts_dict[sid] = _make_source_fact(sid, r)
+                                            source_facts_dict[sid] = _make_source_fact(
+                                                sid, r
+                                            )
                             else:
                                 # Global budget: fill in order of first appearance until exhausted.
                                 total_source_tokens = 0
@@ -3268,7 +3622,8 @@ class MemoryEngine(MemoryEngineInterface):
                                     fact_tokens = len(encoding.encode(r["text"]))
                                     if (
                                         max_source_facts_tokens >= 0
-                                        and total_source_tokens + fact_tokens > max_source_facts_tokens
+                                        and total_source_tokens + fact_tokens
+                                        > max_source_facts_tokens
                                     ):
                                         break
                                     source_facts_dict[sid] = _make_source_fact(sid, r)
@@ -3294,7 +3649,10 @@ class MemoryEngine(MemoryEngineInterface):
                             if unit_id not in fact_entity_map:
                                 fact_entity_map[unit_id] = []
                             fact_entity_map[unit_id].append(
-                                {"entity_id": str(row["entity_id"]), "canonical_name": row["canonical_name"]}
+                                {
+                                    "entity_id": str(row["entity_id"]),
+                                    "canonical_name": row["canonical_name"],
+                                }
                             )
 
             # Convert results to MemoryFact objects
@@ -3304,7 +3662,9 @@ class MemoryEngine(MemoryEngineInterface):
                 # Get entity names for this fact
                 entity_names = None
                 if include_entities and result_id in fact_entity_map:
-                    entity_names = [e["canonical_name"] for e in fact_entity_map[result_id]]
+                    entity_names = [
+                        e["canonical_name"] for e in fact_entity_map[result_id]
+                    ]
 
                 memory_facts.append(
                     MemoryFact(
@@ -3319,7 +3679,11 @@ class MemoryEngine(MemoryEngineInterface):
                         document_id=result_dict.get("document_id"),
                         chunk_id=result_dict.get("chunk_id"),
                         tags=result_dict.get("tags"),
-                        source_fact_ids=source_fact_ids_by_obs.get(result_id) if include_source_facts else None,
+                        source_fact_ids=(
+                            source_fact_ids_by_obs.get(result_id)
+                            if include_source_facts
+                            else None
+                        ),
                     )
                 )
 
@@ -3382,7 +3746,9 @@ class MemoryEngine(MemoryEngineInterface):
             )
 
         except Exception as e:
-            log_buffer.append(f"[RECALL {recall_id}] ERROR after {time.time() - recall_start:.3f}s: {str(e)}")
+            log_buffer.append(
+                f"[RECALL {recall_id}] ERROR after {time.time() - recall_start:.3f}s: {str(e)}"
+            )
             if not quiet:
                 logger.error("\n" + "\n".join(log_buffer))
             raise Exception(f"Failed to search memories: {str(e)}")
@@ -3444,8 +3810,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="get_document", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="get_document",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
         async with acquire_with_retry(pool) as conn:
             doc = await conn.fetchrow(
@@ -3470,8 +3842,12 @@ class MemoryEngine(MemoryEngineInterface):
                 "original_text": doc["original_text"],
                 "content_hash": doc["content_hash"],
                 "memory_unit_count": doc["unit_count"],
-                "created_at": doc["created_at"].isoformat() if doc["created_at"] else None,
-                "updated_at": doc["updated_at"].isoformat() if doc["updated_at"] else None,
+                "created_at": (
+                    doc["created_at"].isoformat() if doc["created_at"] else None
+                ),
+                "updated_at": (
+                    doc["updated_at"].isoformat() if doc["updated_at"] else None
+                ),
                 "tags": list(doc["tags"]) if doc["tags"] else [],
             }
 
@@ -3497,8 +3873,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="delete_document", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="delete_document",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
         invalidated_obs = 0
         async with acquire_with_retry(pool) as conn:
@@ -3510,12 +3892,17 @@ class MemoryEngine(MemoryEngineInterface):
                 )
                 unit_ids = [str(row["id"]) for row in unit_rows]
                 units_count = await conn.fetchval(
-                    f"SELECT COUNT(*) FROM {fq_table('memory_units')} WHERE document_id = $1", document_id
+                    f"SELECT COUNT(*) FROM {fq_table('memory_units')} WHERE document_id = $1",
+                    document_id,
                 )
 
                 # Invalidate observations referencing these memories before deletion
                 if unit_ids:
-                    invalidated_obs = await self._delete_stale_observations_for_memories(conn, bank_id, unit_ids)
+                    invalidated_obs = (
+                        await self._delete_stale_observations_for_memories(
+                            conn, bank_id, unit_ids
+                        )
+                    )
 
                 # Delete document (cascades to memory_units and all their links)
                 deleted = await conn.fetchval(
@@ -3530,7 +3917,9 @@ class MemoryEngine(MemoryEngineInterface):
                 }
 
         if invalidated_obs > 0:
-            await self.submit_async_consolidation(bank_id=bank_id, request_context=request_context)
+            await self.submit_async_consolidation(
+                bank_id=bank_id, request_context=request_context
+            )
 
         return result
 
@@ -3564,8 +3953,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="update_document", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="update_document",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
         invalidated_obs = 0
         async with acquire_with_retry(pool) as conn:
@@ -3628,7 +4023,10 @@ class MemoryEngine(MemoryEngineInterface):
                             for obs in affected_obs:
                                 for src_id in obs["source_memory_ids"] or []:
                                     src_str = str(src_id)
-                                    if src_str not in unit_uuid_set and src_str not in seen:
+                                    if (
+                                        src_str not in unit_uuid_set
+                                        and src_str not in seen
+                                    ):
                                         other_source_uuids.append(src_id)
                                         seen.add(src_str)
 
@@ -3664,7 +4062,9 @@ class MemoryEngine(MemoryEngineInterface):
                             )
 
         if invalidated_obs > 0:
-            await self.submit_async_consolidation(bank_id=bank_id, request_context=request_context)
+            await self.submit_async_consolidation(
+                bank_id=bank_id, request_context=request_context
+            )
 
         return True
 
@@ -3708,25 +4108,34 @@ class MemoryEngine(MemoryEngineInterface):
 
                 # Invalidate observations before deletion (only for source memory types)
                 if bank_id and fact_type in ("experience", "world"):
-                    invalidated_obs = await self._delete_stale_observations_for_memories(conn, bank_id, [unit_id])
+                    invalidated_obs = (
+                        await self._delete_stale_observations_for_memories(
+                            conn, bank_id, [unit_id]
+                        )
+                    )
                     if invalidated_obs > 0:
                         bank_id_for_consolidation = bank_id
 
                 # Delete the memory unit (cascades to links and associations)
                 deleted = await conn.fetchval(
-                    f"DELETE FROM {fq_table('memory_units')} WHERE id = $1 RETURNING id", unit_id
+                    f"DELETE FROM {fq_table('memory_units')} WHERE id = $1 RETURNING id",
+                    unit_id,
                 )
 
                 result = {
                     "success": deleted is not None,
                     "unit_id": str(deleted) if deleted else None,
-                    "message": "Memory unit and all its links deleted successfully"
-                    if deleted
-                    else "Memory unit not found",
+                    "message": (
+                        "Memory unit and all its links deleted successfully"
+                        if deleted
+                        else "Memory unit not found"
+                    ),
                 }
 
         if bank_id_for_consolidation:
-            await self.submit_async_consolidation(bank_id=bank_id_for_consolidation, request_context=request_context)
+            await self.submit_async_consolidation(
+                bank_id=bank_id_for_consolidation, request_context=request_context
+            )
 
         return result
 
@@ -3760,8 +4169,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="delete_bank", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="delete_bank",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
         invalidated_obs = 0
         result: dict[str, int] = {}
@@ -3781,8 +4196,10 @@ class MemoryEngine(MemoryEngineInterface):
                             )
                             unit_ids = [str(row["id"]) for row in unit_id_rows]
                             if unit_ids:
-                                invalidated_obs = await self._delete_stale_observations_for_memories(
-                                    conn, bank_id, unit_ids
+                                invalidated_obs = (
+                                    await self._delete_stale_observations_for_memories(
+                                        conn, bank_id, unit_ids
+                                    )
                                 )
 
                         # Delete only memories of a specific fact type
@@ -3799,31 +4216,47 @@ class MemoryEngine(MemoryEngineInterface):
 
                         # Note: We don't delete entities when fact_type is specified,
                         # as they may be referenced by other memory units
-                        result = {"memory_units_deleted": units_count, "entities_deleted": 0}
+                        result = {
+                            "memory_units_deleted": units_count,
+                            "entities_deleted": 0,
+                        }
                     else:
                         # Delete all data for the bank — observations are included, no invalidation needed
                         units_count = await conn.fetchval(
-                            f"SELECT COUNT(*) FROM {fq_table('memory_units')} WHERE bank_id = $1", bank_id
+                            f"SELECT COUNT(*) FROM {fq_table('memory_units')} WHERE bank_id = $1",
+                            bank_id,
                         )
                         entities_count = await conn.fetchval(
-                            f"SELECT COUNT(*) FROM {fq_table('entities')} WHERE bank_id = $1", bank_id
+                            f"SELECT COUNT(*) FROM {fq_table('entities')} WHERE bank_id = $1",
+                            bank_id,
                         )
                         documents_count = await conn.fetchval(
-                            f"SELECT COUNT(*) FROM {fq_table('documents')} WHERE bank_id = $1", bank_id
+                            f"SELECT COUNT(*) FROM {fq_table('documents')} WHERE bank_id = $1",
+                            bank_id,
                         )
 
                         # Delete documents (cascades to chunks)
-                        await conn.execute(f"DELETE FROM {fq_table('documents')} WHERE bank_id = $1", bank_id)
+                        await conn.execute(
+                            f"DELETE FROM {fq_table('documents')} WHERE bank_id = $1",
+                            bank_id,
+                        )
 
                         # Delete memory units (cascades to unit_entities, memory_links)
-                        await conn.execute(f"DELETE FROM {fq_table('memory_units')} WHERE bank_id = $1", bank_id)
+                        await conn.execute(
+                            f"DELETE FROM {fq_table('memory_units')} WHERE bank_id = $1",
+                            bank_id,
+                        )
 
                         # Delete entities (cascades to unit_entities, entity_cooccurrences, memory_links with entity_id)
-                        await conn.execute(f"DELETE FROM {fq_table('entities')} WHERE bank_id = $1", bank_id)
+                        await conn.execute(
+                            f"DELETE FROM {fq_table('entities')} WHERE bank_id = $1",
+                            bank_id,
+                        )
 
                         # Delete the bank profile and retrieve internal_id for HNSW index cleanup
                         internal_id = await conn.fetchval(
-                            f"DELETE FROM {fq_table('banks')} WHERE bank_id = $1 RETURNING internal_id", bank_id
+                            f"DELETE FROM {fq_table('banks')} WHERE bank_id = $1 RETURNING internal_id",
+                            bank_id,
                         )
                         if internal_id:
                             bank_internal_id = str(internal_id)
@@ -3845,7 +4278,9 @@ class MemoryEngine(MemoryEngineInterface):
                 await bank_utils.drop_bank_hnsw_indexes(conn, bank_internal_id)
 
         if invalidated_obs > 0:
-            await self.submit_async_consolidation(bank_id=bank_id, request_context=request_context)
+            await self.submit_async_consolidation(
+                bank_id=bank_id, request_context=request_context
+            )
 
         return result
 
@@ -3869,8 +4304,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="clear_observations", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="clear_observations",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
         async with acquire_with_retry(pool) as conn:
             async with conn.transaction():
@@ -3926,9 +4367,13 @@ class MemoryEngine(MemoryEngineInterface):
             from hindsight_api.extensions import BankWriteContext
 
             ctx = BankWriteContext(
-                bank_id=bank_id, operation="retry_failed_consolidation", request_context=request_context
+                bank_id=bank_id,
+                operation="retry_failed_consolidation",
+                request_context=request_context,
             )
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
         async with acquire_with_retry(pool) as conn:
             count = await conn.fetchval(
@@ -3980,9 +4425,13 @@ class MemoryEngine(MemoryEngineInterface):
             from hindsight_api.extensions import BankWriteContext
 
             ctx = BankWriteContext(
-                bank_id=bank_id, operation="clear_observations_for_memory", request_context=request_context
+                bank_id=bank_id,
+                operation="clear_observations_for_memory",
+                request_context=request_context,
             )
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
         deleted_count = 0
 
@@ -3990,7 +4439,9 @@ class MemoryEngine(MemoryEngineInterface):
             async with conn.transaction():
                 import uuid as uuid_module
 
-                deleted_count = await self._delete_stale_observations_for_memories(conn, bank_id, [memory_id])
+                deleted_count = await self._delete_stale_observations_for_memories(
+                    conn, bank_id, [memory_id]
+                )
 
                 # Also reset this memory's own consolidated_at so it gets re-consolidated
                 # (the memory was a source for the deleted observations, so it needs new ones)
@@ -4008,7 +4459,9 @@ class MemoryEngine(MemoryEngineInterface):
                     )
 
         if deleted_count > 0:
-            await self.submit_async_consolidation(bank_id=bank_id, request_context=request_context)
+            await self.submit_async_consolidation(
+                bank_id=bank_id, request_context=request_context
+            )
 
         return {"deleted_count": deleted_count}
 
@@ -4032,8 +4485,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="run_consolidation", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="run_consolidation",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
 
         from .consolidation import run_consolidation_job
 
@@ -4082,8 +4541,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="get_graph_data", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="get_graph_data",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
         async with acquire_with_retry(pool) as conn:
             # Get memory units, optionally filtered by bank_id and fact_type
@@ -4103,19 +4568,25 @@ class MemoryEngine(MemoryEngineInterface):
 
             if q:
                 param_count += 1
-                query_conditions.append(f"(text ILIKE ${param_count} OR context ILIKE ${param_count})")
+                query_conditions.append(
+                    f"(text ILIKE ${param_count} OR context ILIKE ${param_count})"
+                )
                 query_params.append(f"%{q}%")
 
             if tags:
                 from .search.tags import build_tags_where_clause_simple
 
-                tag_clause = build_tags_where_clause_simple(tags, param_count + 1, match=tags_match)
+                tag_clause = build_tags_where_clause_simple(
+                    tags, param_count + 1, match=tags_match
+                )
                 if tag_clause:
                     query_conditions.append(tag_clause.removeprefix("AND "))
                     param_count += 1
                     query_params.append(tags)
 
-            where_clause = "WHERE " + " AND ".join(query_conditions) if query_conditions else ""
+            where_clause = (
+                "WHERE " + " AND ".join(query_conditions) if query_conditions else ""
+            )
 
             # Get total count first
             total_count_result = await conn.fetchrow(
@@ -4200,7 +4671,11 @@ class MemoryEngine(MemoryEngineInterface):
                     for obs_id in from_observations:
                         # Only include if the target is visible
                         if to_id in unit_id_set or to_observations:
-                            target = to_observations[0] if to_observations and to_id not in unit_id_set else to_id
+                            target = (
+                                to_observations[0]
+                                if to_observations and to_id not in unit_id_set
+                                else to_id
+                            )
                             if target in unit_id_set and obs_id != target:
                                 copied_links.append(
                                     {
@@ -4228,7 +4703,10 @@ class MemoryEngine(MemoryEngineInterface):
 
             # Keep only direct links between visible nodes
             direct_links = [
-                link for link in links if link["from_unit_id"] in unit_id_set and link["to_unit_id"] in unit_id_set
+                link
+                for link in links
+                if link["from_unit_id"] in unit_id_set
+                and link["to_unit_id"] in unit_id_set
             ]
 
             # Get entity information
@@ -4295,7 +4773,9 @@ class MemoryEngine(MemoryEngineInterface):
 
         # Build observation-inferred links from inherited entities and shared source memories.
         # Observations never have direct memory_links rows, so all their links must be derived.
-        observation_units = [unit for unit in units if unit["fact_type"] == "observation"]
+        observation_units = [
+            unit for unit in units if unit["fact_type"] == "observation"
+        ]
         observation_ids = {unit["id"] for unit in observation_units}
 
         # Entity links: pair observations that share at least one inherited entity
@@ -4317,7 +4797,12 @@ class MemoryEngine(MemoryEngineInterface):
         for entity_name, obs_ids in entity_to_observations.items():
             for i, obs_a in enumerate(obs_ids):
                 for obs_b in obs_ids[i + 1 :]:
-                    pair = (min(str(obs_a), str(obs_b)), max(str(obs_a), str(obs_b)), "entity", entity_name)
+                    pair = (
+                        min(str(obs_a), str(obs_b)),
+                        max(str(obs_a), str(obs_b)),
+                        "entity",
+                        entity_name,
+                    )
                     if pair not in seen_inferred:
                         seen_inferred.add(pair)
                         observation_inferred_links.append(
@@ -4333,7 +4818,12 @@ class MemoryEngine(MemoryEngineInterface):
         for src_id, obs_ids in source_to_obs_for_semantic.items():
             for i, obs_a in enumerate(obs_ids):
                 for obs_b in obs_ids[i + 1 :]:
-                    pair = (min(str(obs_a), str(obs_b)), max(str(obs_a), str(obs_b)), "semantic", "")
+                    pair = (
+                        min(str(obs_a), str(obs_b)),
+                        max(str(obs_a), str(obs_b)),
+                        "semantic",
+                        "",
+                    )
                     if pair not in seen_inferred:
                         seen_inferred.add(pair)
                         observation_inferred_links.append(
@@ -4402,23 +4892,41 @@ class MemoryEngine(MemoryEngineInterface):
                     "id": str(unit_id),
                     "text": row["text"],
                     "context": row["context"] if row["context"] else "N/A",
-                    "occurred_start": row["occurred_start"].isoformat() if row["occurred_start"] else None,
-                    "occurred_end": row["occurred_end"].isoformat() if row["occurred_end"] else None,
-                    "mentioned_at": row["mentioned_at"].isoformat() if row["mentioned_at"] else None,
-                    "date": row["event_date"].strftime("%Y-%m-%d %H:%M")
-                    if row["event_date"]
-                    else "N/A",  # Deprecated, kept for backwards compatibility
+                    "occurred_start": (
+                        row["occurred_start"].isoformat()
+                        if row["occurred_start"]
+                        else None
+                    ),
+                    "occurred_end": (
+                        row["occurred_end"].isoformat() if row["occurred_end"] else None
+                    ),
+                    "mentioned_at": (
+                        row["mentioned_at"].isoformat() if row["mentioned_at"] else None
+                    ),
+                    "date": (
+                        row["event_date"].strftime("%Y-%m-%d %H:%M")
+                        if row["event_date"]
+                        else "N/A"
+                    ),  # Deprecated, kept for backwards compatibility
                     "entities": ", ".join(entities) if entities else "None",
                     "document_id": row["document_id"],
                     "chunk_id": row["chunk_id"] if row["chunk_id"] else None,
                     "fact_type": row["fact_type"],
                     "tags": list(row["tags"]) if row["tags"] else [],
-                    "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+                    "created_at": (
+                        row["created_at"].isoformat() if row["created_at"] else None
+                    ),
                     "proof_count": row["proof_count"] if row["proof_count"] else None,
                 }
             )
 
-        return {"nodes": nodes, "edges": edges, "table_rows": table_rows, "total_units": total_count, "limit": limit}
+        return {
+            "nodes": nodes,
+            "edges": edges,
+            "table_rows": table_rows,
+            "total_units": total_count,
+            "limit": limit,
+        }
 
     async def list_memory_units(
         self,
@@ -4448,8 +4956,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="list_memory_units", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="list_memory_units",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
         async with acquire_with_retry(pool) as conn:
             # Build query conditions
@@ -4470,10 +4984,14 @@ class MemoryEngine(MemoryEngineInterface):
             if search_query:
                 # Full-text search on text and context fields using ILIKE
                 param_count += 1
-                query_conditions.append(f"(text ILIKE ${param_count} OR context ILIKE ${param_count})")
+                query_conditions.append(
+                    f"(text ILIKE ${param_count} OR context ILIKE ${param_count})"
+                )
                 query_params.append(f"%{search_query}%")
 
-            where_clause = "WHERE " + " AND ".join(query_conditions) if query_conditions else ""
+            where_clause = (
+                "WHERE " + " AND ".join(query_conditions) if query_conditions else ""
+            )
 
             # Get total count
             count_query = f"""
@@ -4540,14 +5058,30 @@ class MemoryEngine(MemoryEngineInterface):
                         "id": str(unit_id),
                         "text": row["text"],
                         "context": row["context"] if row["context"] else "",
-                        "date": row["event_date"].isoformat() if row["event_date"] else "",
+                        "date": (
+                            row["event_date"].isoformat() if row["event_date"] else ""
+                        ),
                         "fact_type": row["fact_type"],
-                        "mentioned_at": row["mentioned_at"].isoformat() if row["mentioned_at"] else None,
-                        "occurred_start": row["occurred_start"].isoformat() if row["occurred_start"] else None,
-                        "occurred_end": row["occurred_end"].isoformat() if row["occurred_end"] else None,
+                        "mentioned_at": (
+                            row["mentioned_at"].isoformat()
+                            if row["mentioned_at"]
+                            else None
+                        ),
+                        "occurred_start": (
+                            row["occurred_start"].isoformat()
+                            if row["occurred_start"]
+                            else None
+                        ),
+                        "occurred_end": (
+                            row["occurred_end"].isoformat()
+                            if row["occurred_end"]
+                            else None
+                        ),
                         "entities": ", ".join(entities) if entities else "",
                         "chunk_id": row["chunk_id"] if row["chunk_id"] else None,
-                        "proof_count": row["proof_count"] if row["proof_count"] is not None else 1,
+                        "proof_count": (
+                            row["proof_count"] if row["proof_count"] is not None else 1
+                        ),
                         "tags": list(row["tags"]) if row["tags"] else [],
                     }
                 )
@@ -4575,8 +5109,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="get_memory_unit", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="get_memory_unit",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
         async with acquire_with_retry(pool) as conn:
             # Get the memory unit (include source_memory_ids for mental models)
@@ -4608,7 +5148,11 @@ class MemoryEngine(MemoryEngineInterface):
             entities = [r["canonical_name"] for r in entities_rows]
 
             # For observations with no direct entities, inherit from source memories
-            if not entities and row["fact_type"] == "observation" and row["source_memory_ids"]:
+            if (
+                not entities
+                and row["fact_type"] == "observation"
+                and row["source_memory_ids"]
+            ):
                 source_entities_rows = await conn.fetch(
                     f"""
                     SELECT DISTINCT e.canonical_name
@@ -4626,14 +5170,22 @@ class MemoryEngine(MemoryEngineInterface):
                 "context": row["context"] if row["context"] else "",
                 "date": row["event_date"].isoformat() if row["event_date"] else "",
                 "type": row["fact_type"],
-                "mentioned_at": row["mentioned_at"].isoformat() if row["mentioned_at"] else None,
-                "occurred_start": row["occurred_start"].isoformat() if row["occurred_start"] else None,
-                "occurred_end": row["occurred_end"].isoformat() if row["occurred_end"] else None,
+                "mentioned_at": (
+                    row["mentioned_at"].isoformat() if row["mentioned_at"] else None
+                ),
+                "occurred_start": (
+                    row["occurred_start"].isoformat() if row["occurred_start"] else None
+                ),
+                "occurred_end": (
+                    row["occurred_end"].isoformat() if row["occurred_end"] else None
+                ),
                 "entities": entities,
                 "document_id": row["document_id"] if row["document_id"] else None,
                 "chunk_id": str(row["chunk_id"]) if row["chunk_id"] else None,
                 "tags": row["tags"] if row["tags"] else [],
-                "observation_scopes": row["observation_scopes"] if row["observation_scopes"] else None,
+                "observation_scopes": (
+                    row["observation_scopes"] if row["observation_scopes"] else None
+                ),
             }
 
             # For observations, include source_memory_ids
@@ -4661,8 +5213,14 @@ class MemoryEngine(MemoryEngineInterface):
                         "text": r["text"],
                         "type": r["fact_type"],
                         "context": r["context"],
-                        "occurred_start": r["occurred_start"].isoformat() if r["occurred_start"] else None,
-                        "mentioned_at": r["mentioned_at"].isoformat() if r["mentioned_at"] else None,
+                        "occurred_start": (
+                            r["occurred_start"].isoformat()
+                            if r["occurred_start"]
+                            else None
+                        ),
+                        "mentioned_at": (
+                            r["mentioned_at"].isoformat() if r["mentioned_at"] else None
+                        ),
                     }
                     for r in source_rows
                 ]
@@ -4685,8 +5243,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="get_observation_history", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="get_observation_history",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
         async with acquire_with_retry(pool) as conn:
             row = await conn.fetchrow(
@@ -4710,8 +5274,12 @@ class MemoryEngine(MemoryEngineInterface):
                 return []
 
             # Collect all source memory IDs (current full set + all historical new ones)
-            current_source_ids: list[str] = [str(sid) for sid in (row["source_memory_ids"] or [])]
-            all_source_ids: set[uuid.UUID] = set(uuid.UUID(sid) for sid in current_source_ids)
+            current_source_ids: list[str] = [
+                str(sid) for sid in (row["source_memory_ids"] or [])
+            ]
+            all_source_ids: set[uuid.UUID] = set(
+                uuid.UUID(sid) for sid in current_source_ids
+            )
             for entry in raw_history:
                 for sid in entry.get("new_source_memory_ids", []):
                     try:
@@ -4747,13 +5315,17 @@ class MemoryEngine(MemoryEngineInterface):
                 new_ids_in_entry: set[str] = set(entry.get("new_source_memory_ids", []))
                 source_facts = []
                 for sid in cumulative_ids:
-                    fact = source_map.get(sid, {"id": sid, "text": None, "type": None, "context": None})
+                    fact = source_map.get(
+                        sid, {"id": sid, "text": None, "type": None, "context": None}
+                    )
                     source_facts.append({**fact, "is_new": sid in new_ids_in_entry})
                 enriched_entry = dict(entry)
                 enriched_entry["source_facts"] = source_facts
                 enriched.append(enriched_entry)
                 # Step back: remove the new IDs added by this change to get the prior state
-                cumulative_ids = [sid for sid in cumulative_ids if sid not in new_ids_in_entry]
+                cumulative_ids = [
+                    sid for sid in cumulative_ids if sid not in new_ids_in_entry
+                ]
 
             enriched.reverse()
             return enriched
@@ -4788,8 +5360,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="list_documents", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="list_documents",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
         async with acquire_with_retry(pool) as conn:
             # Build query conditions
@@ -4811,12 +5389,20 @@ class MemoryEngine(MemoryEngineInterface):
                 tags, param_offset=param_count + 1, match=tags_match
             )
             query_params.extend(tags_params)
-            param_count = next_param - 1  # next_param is next available; convert to last used
+            param_count = (
+                next_param - 1
+            )  # next_param is next available; convert to last used
 
-            where_clause = "WHERE " + " AND ".join(query_conditions) if query_conditions else ""
+            where_clause = (
+                "WHERE " + " AND ".join(query_conditions) if query_conditions else ""
+            )
             if tags_clause:
                 # tags_clause starts with "AND", append after WHERE conditions
-                where_clause = where_clause + " " + tags_clause if where_clause else "WHERE " + tags_clause[4:].lstrip()
+                where_clause = (
+                    where_clause + " " + tags_clause
+                    if where_clause
+                    else "WHERE " + tags_clause[4:].lstrip()
+                )
 
             # Get total count
             count_query = f"""
@@ -4865,7 +5451,9 @@ class MemoryEngine(MemoryEngineInterface):
                 for i, (doc_id, bank_id_val) in enumerate(doc_ids):
                     idx_doc = i * 2 + 1
                     idx_agent = i * 2 + 2
-                    placeholders.append(f"(document_id = ${idx_doc} AND bank_id = ${idx_agent})")
+                    placeholders.append(
+                        f"(document_id = ${idx_doc} AND bank_id = ${idx_agent})"
+                    )
                     params_for_count.extend([doc_id, bank_id_val])
 
                 where_clause_count = " OR ".join(placeholders)
@@ -4883,7 +5471,10 @@ class MemoryEngine(MemoryEngineInterface):
                 unit_counts = []
 
             # Build count mapping
-            count_map = {(row["document_id"], row["bank_id"]): row["unit_count"] for row in unit_counts}
+            count_map = {
+                (row["document_id"], row["bank_id"]): row["unit_count"]
+                for row in unit_counts
+            }
 
             # Build result items
             items = []
@@ -4897,11 +5488,17 @@ class MemoryEngine(MemoryEngineInterface):
                         "id": doc_id,
                         "bank_id": bank_id_val,
                         "content_hash": row["content_hash"],
-                        "created_at": row["created_at"].isoformat() if row["created_at"] else "",
-                        "updated_at": row["updated_at"].isoformat() if row["updated_at"] else "",
+                        "created_at": (
+                            row["created_at"].isoformat() if row["created_at"] else ""
+                        ),
+                        "updated_at": (
+                            row["updated_at"].isoformat() if row["updated_at"] else ""
+                        ),
                         "text_length": row["text_length"] or 0,
                         "memory_unit_count": unit_count,
-                        "retain_params": row["retain_params"] if row["retain_params"] else None,
+                        "retain_params": (
+                            row["retain_params"] if row["retain_params"] else None
+                        ),
                         "tags": row["tags"] if row["tags"] else [],
                     }
                 )
@@ -4948,8 +5545,14 @@ class MemoryEngine(MemoryEngineInterface):
             if self._operation_validator:
                 from hindsight_api.extensions import BankReadContext
 
-                ctx = BankReadContext(bank_id=chunk["bank_id"], operation="get_chunk", request_context=request_context)
-                await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+                ctx = BankReadContext(
+                    bank_id=chunk["bank_id"],
+                    operation="get_chunk",
+                    request_context=request_context,
+                )
+                await self._validate_operation(
+                    self._operation_validator.validate_bank_read(ctx)
+                )
 
             return {
                 "chunk_id": chunk["chunk_id"],
@@ -4957,7 +5560,9 @@ class MemoryEngine(MemoryEngineInterface):
                 "bank_id": chunk["bank_id"],
                 "chunk_index": chunk["chunk_index"],
                 "chunk_text": chunk["chunk_text"],
-                "created_at": chunk["created_at"].isoformat() if chunk["created_at"] else "",
+                "created_at": (
+                    chunk["created_at"].isoformat() if chunk["created_at"] else ""
+                ),
             }
 
     # ==================== bank profile Methods ====================
@@ -4983,24 +5588,38 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="get_bank_profile", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="get_bank_profile",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
         profile = await bank_utils.get_bank_profile(pool, bank_id)
 
         # reflect_mission and disposition in config take precedence over the legacy DB columns
-        config_dict = await self._config_resolver.get_bank_config(bank_id, request_context)
+        config_dict = await self._config_resolver.get_bank_config(
+            bank_id, request_context
+        )
         mission = config_dict.get("reflect_mission") or profile["mission"]
 
         # Overlay disposition from config if explicitly set; fall back to DB values
         db_disp = profile["disposition"]
-        db_disp_dict = db_disp.model_dump() if hasattr(db_disp, "model_dump") else dict(db_disp)
+        db_disp_dict = (
+            db_disp.model_dump() if hasattr(db_disp, "model_dump") else dict(db_disp)
+        )
         cfg_skep = config_dict.get("disposition_skepticism")
         cfg_lit = config_dict.get("disposition_literalism")
         cfg_emp = config_dict.get("disposition_empathy")
         disposition = {
-            "skepticism": cfg_skep if cfg_skep is not None else db_disp_dict["skepticism"],
-            "literalism": cfg_lit if cfg_lit is not None else db_disp_dict["literalism"],
+            "skepticism": (
+                cfg_skep if cfg_skep is not None else db_disp_dict["skepticism"]
+            ),
+            "literalism": (
+                cfg_lit if cfg_lit is not None else db_disp_dict["literalism"]
+            ),
             "empathy": cfg_emp if cfg_emp is not None else db_disp_dict["empathy"],
         }
 
@@ -5031,9 +5650,13 @@ class MemoryEngine(MemoryEngineInterface):
             from hindsight_api.extensions import BankWriteContext
 
             ctx = BankWriteContext(
-                bank_id=bank_id, operation="update_bank_disposition", request_context=request_context
+                bank_id=bank_id,
+                operation="update_bank_disposition",
+                request_context=request_context,
             )
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
         await bank_utils.update_bank_disposition(pool, bank_id, disposition)
 
@@ -5059,8 +5682,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="set_bank_mission", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="set_bank_mission",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
         await bank_utils.set_bank_mission(pool, bank_id, mission)
         return {"bank_id": bank_id, "mission": mission}
@@ -5088,10 +5717,18 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="merge_bank_mission", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="merge_bank_mission",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
-        return await bank_utils.merge_bank_mission(pool, self._reflect_llm_config, bank_id, new_info)
+        return await bank_utils.merge_bank_mission(
+            pool, self._reflect_llm_config, bank_id, new_info
+        )
 
     async def list_banks(
         self,
@@ -5172,7 +5809,9 @@ class MemoryEngine(MemoryEngineInterface):
         """
         # Use cached LLM config
         if self._reflect_llm_config is None:
-            raise ValueError("Memory LLM API key not set. Set HINDSIGHT_API_LLM_API_KEY environment variable.")
+            raise ValueError(
+                "Memory LLM API key not set. Set HINDSIGHT_API_LLM_API_KEY environment variable."
+            )
 
         # Authenticate tenant and set schema in context (for fq_table())
         await self._authenticate_tenant(request_context)
@@ -5188,12 +5827,16 @@ class MemoryEngine(MemoryEngineInterface):
                 budget=budget,
                 context=context,
             )
-            await self._validate_operation(self._operation_validator.validate_reflect(ctx))
+            await self._validate_operation(
+                self._operation_validator.validate_reflect(ctx)
+            )
 
         reflect_start = time.time()
         reflect_id = f"{bank_id[:8]}-{int(time.time() * 1000) % 100000}"
         tags_info = f", tags={tags} ({tags_match})" if tags else ""
-        logger.info(f"[REFLECT {reflect_id}] Starting agentic reflect for query: {query[:50]}...{tags_info}")
+        logger.info(
+            f"[REFLECT {reflect_id}] Starting agentic reflect for query: {query[:50]}...{tags_info}"
+        )
 
         # Get bank profile for agent identity
         profile = await self.get_bank_profile(bank_id, request_context=request_context)
@@ -5202,7 +5845,9 @@ class MemoryEngine(MemoryEngineInterface):
         # The agent can call lookup() to list available models if needed.
         # This is critical for banks with many mental models to avoid huge prompts.
 
-        resolved_reflect_config = await self._config_resolver.resolve_full_config(bank_id, request_context)
+        resolved_reflect_config = await self._config_resolver.resolve_full_config(
+            bank_id, request_context
+        )
 
         # Compute max iterations based on budget
         config = get_config()
@@ -5210,7 +5855,9 @@ class MemoryEngine(MemoryEngineInterface):
         # Budget multipliers: low=0.5x, mid=1x, high=2x
         budget_multipliers = {Budget.LOW: 0.5, Budget.MID: 1.0, Budget.HIGH: 2.0}
         effective_budget = budget or Budget.LOW
-        max_iterations = max(1, int(base_max_iterations * budget_multipliers.get(effective_budget, 1.0)))
+        max_iterations = max(
+            1, int(base_max_iterations * budget_multipliers.get(effective_budget, 1.0))
+        )
         max_context_tokens = config.reflect_max_context_tokens
 
         # Run agentic loop - acquire connections only when needed for DB operations
@@ -5219,15 +5866,27 @@ class MemoryEngine(MemoryEngineInterface):
 
         # Get bank stats for freshness info
         bank_stats = await self.get_bank_stats(bank_id, request_context=request_context)
-        last_consolidated_at = bank_stats.last_consolidated_at if hasattr(bank_stats, "last_consolidated_at") else None
-        pending_consolidation = bank_stats.pending_consolidation if hasattr(bank_stats, "pending_consolidation") else 0
+        last_consolidated_at = (
+            bank_stats.last_consolidated_at
+            if hasattr(bank_stats, "last_consolidated_at")
+            else None
+        )
+        pending_consolidation = (
+            bank_stats.pending_consolidation
+            if hasattr(bank_stats, "pending_consolidation")
+            else 0
+        )
 
         # Create tool callbacks that acquire connections only when needed
         from .retain import embedding_utils
 
-        async def search_mental_models_fn(q: str, max_results: int = 5) -> dict[str, Any]:
+        async def search_mental_models_fn(
+            q: str, max_results: int = 5
+        ) -> dict[str, Any]:
             # Generate embedding for the query
-            embeddings = await embedding_utils.generate_embeddings_batch(self.embeddings, [q])
+            embeddings = await embedding_utils.generate_embeddings_batch(
+                self.embeddings, [q]
+            )
             query_embedding = embeddings[0]
             async with pool.acquire() as conn:
                 return await tool_search_mental_models(
@@ -5243,7 +5902,9 @@ class MemoryEngine(MemoryEngineInterface):
                     pending_consolidation=pending_consolidation,
                 )
 
-        async def search_observations_fn(q: str, max_tokens: int = 5000) -> dict[str, Any]:
+        async def search_observations_fn(
+            q: str, max_tokens: int = 5000
+        ) -> dict[str, Any]:
             return await tool_search_observations(
                 self,
                 bank_id,
@@ -5259,10 +5920,16 @@ class MemoryEngine(MemoryEngineInterface):
 
         # Determine which tools to enable based on fact_types and exclude_mental_models
         include_observations = fact_types is None or "observation" in fact_types
-        recall_fact_types = [ft for ft in (fact_types or ["world", "experience"]) if ft in ("world", "experience")]
+        recall_fact_types = [
+            ft
+            for ft in (fact_types or ["world", "experience"])
+            if ft in ("world", "experience")
+        ]
         include_recall = bool(recall_fact_types)
 
-        async def recall_fn(q: str, max_tokens: int = 4096, max_chunk_tokens: int = 1000) -> dict[str, Any]:
+        async def recall_fn(
+            q: str, max_tokens: int = 4096, max_chunk_tokens: int = 1000
+        ) -> dict[str, Any]:
             return await tool_recall(
                 self,
                 bank_id,
@@ -5306,7 +5973,9 @@ class MemoryEngine(MemoryEngineInterface):
                 )
             has_mental_models = mental_model_count > 0
             if has_mental_models:
-                logger.info(f"[REFLECT {reflect_id}] Bank has {mental_model_count} mental models")
+                logger.info(
+                    f"[REFLECT {reflect_id}] Bank has {mental_model_count} mental models"
+                )
 
         # Run the agent with parent span for reflect operation (skip if called from another operation)
         if not _skip_span:
@@ -5316,26 +5985,43 @@ class MemoryEngine(MemoryEngineInterface):
             span_context = None
 
         try:
-            agent_result = await run_reflect_agent(
-                llm_config=self._reflect_llm_config.with_config(resolved_reflect_config),
-                bank_id=bank_id,
-                query=query,
-                bank_profile=profile,
-                search_mental_models_fn=search_mental_models_fn,
-                search_observations_fn=search_observations_fn,
-                recall_fn=recall_fn,
-                expand_fn=expand_fn,
-                context=context,
-                max_iterations=max_iterations,
-                max_tokens=max_tokens,
-                response_schema=response_schema,
-                directives=directives,
-                has_mental_models=has_mental_models,
-                include_observations=include_observations,
-                include_recall=include_recall,
-                budget=effective_budget,
-                max_context_tokens=max_context_tokens,
-            )
+            try:
+                agent_result = await asyncio.wait_for(
+                    run_reflect_agent(
+                        llm_config=self._reflect_llm_config.with_config(
+                            resolved_reflect_config
+                        ),
+                        bank_id=bank_id,
+                        query=query,
+                        bank_profile=profile,
+                        search_mental_models_fn=search_mental_models_fn,
+                        search_observations_fn=search_observations_fn,
+                        recall_fn=recall_fn,
+                        expand_fn=expand_fn,
+                        context=context,
+                        max_iterations=max_iterations,
+                        max_tokens=max_tokens,
+                        response_schema=response_schema,
+                        directives=directives,
+                        has_mental_models=has_mental_models,
+                        include_observations=include_observations,
+                        include_recall=include_recall,
+                        budget=effective_budget,
+                        max_context_tokens=max_context_tokens,
+                    ),
+                    timeout=config.reflect_wall_timeout,
+                )
+            except asyncio.TimeoutError:
+                total_time = time.time() - reflect_start
+                logger.error(
+                    f"[REFLECT {reflect_id}] Wall-clock timeout after {total_time:.1f}s "
+                    f"(limit: {config.reflect_wall_timeout}s)"
+                )
+                raise TimeoutError(
+                    f"Reflect operation timed out after {total_time:.1f}s "
+                    f"(wall-clock limit: {config.reflect_wall_timeout}s). "
+                    f"Reduce budget or increase HINDSIGHT_API_REFLECT_WALL_TIMEOUT."
+                ) from None
 
             total_time = time.time() - reflect_start
             logger.info(
@@ -5358,14 +6044,21 @@ class MemoryEngine(MemoryEngineInterface):
 
             # Convert agent LLM trace to LLMCallTrace objects
             llm_trace_result = [
-                LLMCallTrace(scope=lc.scope, duration_ms=lc.duration_ms) for lc in agent_result.llm_trace
+                LLMCallTrace(scope=lc.scope, duration_ms=lc.duration_ms)
+                for lc in agent_result.llm_trace
             ]
 
             # Extract memories and observations from tool outputs - only include those the agent actually used
             # agent_result.used_memory_ids / used_observation_ids contain validated IDs from the done action
-            used_memory_ids_set = set(agent_result.used_memory_ids) if agent_result.used_memory_ids else set()
+            used_memory_ids_set = (
+                set(agent_result.used_memory_ids)
+                if agent_result.used_memory_ids
+                else set()
+            )
             used_observation_ids_set = (
-                set(agent_result.used_observation_ids) if agent_result.used_observation_ids else set()
+                set(agent_result.used_observation_ids)
+                if agent_result.used_observation_ids
+                else set()
             )
             # based_on stores facts, mental models, and directives
             # Note: directives list stores raw directive dicts (not MemoryFact), which will be converted to Directive objects
@@ -5384,7 +6077,10 @@ class MemoryEngine(MemoryEngineInterface):
                         memory_id = memory_data.get("id")
                         # Only include memories that the agent declared as used (or all if none specified)
                         if memory_id and memory_id not in seen_memory_ids:
-                            if used_memory_ids_set and memory_id not in used_memory_ids_set:
+                            if (
+                                used_memory_ids_set
+                                and memory_id not in used_memory_ids_set
+                            ):
                                 continue  # Skip memories not actually used by the agent
                             seen_memory_ids.add(memory_id)
                             fact_type = memory_data.get("fact_type", "world")
@@ -5395,7 +6091,9 @@ class MemoryEngine(MemoryEngineInterface):
                                         text=memory_data.get("text", ""),
                                         fact_type=fact_type,
                                         context=memory_data.get("context"),
-                                        occurred_start=memory_data.get("occurred_start"),
+                                        occurred_start=memory_data.get(
+                                            "occurred_start"
+                                        ),
                                         occurred_end=memory_data.get("occurred_end"),
                                     )
                                 )
@@ -5403,7 +6101,10 @@ class MemoryEngine(MemoryEngineInterface):
                     for obs_data in tc.output["observations"]:
                         obs_id = obs_data.get("id")
                         if obs_id and obs_id not in seen_memory_ids:
-                            if used_observation_ids_set and obs_id not in used_observation_ids_set:
+                            if (
+                                used_observation_ids_set
+                                and obs_id not in used_observation_ids_set
+                            ):
                                 continue  # Skip observations not actually used by the agent
                             seen_memory_ids.add(obs_id)
                             based_on["observation"].append(MemoryFact(**obs_data))
@@ -5411,7 +6112,9 @@ class MemoryEngine(MemoryEngineInterface):
             # Extract mental models from tool outputs - only include models the agent actually used
             # agent_result.used_mental_model_ids contains validated IDs from the done action
             used_model_ids_set = (
-                set(agent_result.used_mental_model_ids) if agent_result.used_mental_model_ids else set()
+                set(agent_result.used_mental_model_ids)
+                if agent_result.used_mental_model_ids
+                else set()
             )
             based_on["mental-models"] = []
             seen_model_ids: set[str] = set()
@@ -5423,7 +6126,10 @@ class MemoryEngine(MemoryEngineInterface):
                         model_id = model.get("id")
                         if model_id and model_id not in seen_model_ids:
                             # Only include models that the agent declared as used (or all if none specified)
-                            if used_model_ids_set and model_id not in used_model_ids_set:
+                            if (
+                                used_model_ids_set
+                                and model_id not in used_model_ids_set
+                            ):
                                 continue  # Skip models not actually used by the agent
                             seen_model_ids.add(model_id)
                             # Add to based_on as MemoryFact with type "mental-models"
@@ -5445,7 +6151,10 @@ class MemoryEngine(MemoryEngineInterface):
                         model_id = model.get("id")
                         if model_id and model_id not in seen_model_ids:
                             # Only include models that the agent declared as used (or all if none specified)
-                            if used_model_ids_set and model_id not in used_model_ids_set:
+                            if (
+                                used_model_ids_set
+                                and model_id not in used_model_ids_set
+                            ):
                                 continue  # Skip models not actually used by the agent
                             seen_model_ids.add(model_id)
                             # Add to based_on as MemoryFact with type "mental-models"
@@ -5477,7 +6186,8 @@ class MemoryEngine(MemoryEngineInterface):
             from hindsight_api.engine.response_models import DirectiveRef
 
             directives_applied_result = [
-                DirectiveRef(id=d.id, name=d.name, content=d.content) for d in agent_result.directives_applied
+                DirectiveRef(id=d.id, name=d.name, content=d.content)
+                for d in agent_result.directives_applied
             ]
 
             # Convert agent usage to TokenUsage format
@@ -5502,7 +6212,9 @@ class MemoryEngine(MemoryEngineInterface):
 
             # Call post-operation hook if validator is configured
             if self._operation_validator:
-                from hindsight_api.extensions.operation_validator import ReflectResultContext
+                from hindsight_api.extensions.operation_validator import (
+                    ReflectResultContext,
+                )
 
                 result_ctx = ReflectResultContext(
                     bank_id=bank_id,
@@ -5548,8 +6260,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="list_entities", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="list_entities",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
         async with acquire_with_retry(pool) as conn:
             # Get total count
@@ -5596,8 +6314,12 @@ class MemoryEngine(MemoryEngineInterface):
                         "id": str(row["id"]),
                         "canonical_name": row["canonical_name"],
                         "mention_count": row["mention_count"],
-                        "first_seen": row["first_seen"].isoformat() if row["first_seen"] else None,
-                        "last_seen": row["last_seen"].isoformat() if row["last_seen"] else None,
+                        "first_seen": (
+                            row["first_seen"].isoformat() if row["first_seen"] else None
+                        ),
+                        "last_seen": (
+                            row["last_seen"].isoformat() if row["last_seen"] else None
+                        ),
                         "metadata": metadata,
                     }
                 )
@@ -5640,8 +6362,12 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="list_tags", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id, operation="list_tags", request_context=request_context
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
         async with acquire_with_retry(pool) as conn:
             # Build pattern filter if provided (convert * to % for ILIKE)
@@ -5721,9 +6447,17 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="get_entity_state", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
-        return EntityState(entity_id=entity_id, canonical_name=entity_name, observations=[])
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="get_entity_state",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
+        return EntityState(
+            entity_id=entity_id, canonical_name=entity_name, observations=[]
+        )
 
     # =========================================================================
     # Statistics & Operations (for HTTP API layer)
@@ -5740,8 +6474,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="get_bank_stats", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="get_bank_stats",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
 
         async with acquire_with_retry(pool) as conn:
@@ -5772,7 +6512,9 @@ class MemoryEngine(MemoryEngineInterface):
             link_counts: dict[str, int] = {}
             link_counts_by_fact_type: dict[str, int] = {}
             for row in link_breakdown_stats:
-                link_counts[row["link_type"]] = link_counts.get(row["link_type"], 0) + row["count"]
+                link_counts[row["link_type"]] = (
+                    link_counts.get(row["link_type"], 0) + row["count"]
+                )
                 link_counts_by_fact_type[row["fact_type"]] = (
                     link_counts_by_fact_type.get(row["fact_type"], 0) + row["count"]
                 )
@@ -5803,7 +6545,9 @@ class MemoryEngine(MemoryEngineInterface):
 
             node_counts = {row["fact_type"]: row["count"] for row in node_stats}
             ops_by_status = {row["status"]: row["count"] for row in ops_stats}
-            last_consolidated_at = consolidation_row["last_consolidated_at"] if consolidation_row else None
+            last_consolidated_at = (
+                consolidation_row["last_consolidated_at"] if consolidation_row else None
+            )
 
             return {
                 "bank_id": bank_id,
@@ -5811,13 +6555,21 @@ class MemoryEngine(MemoryEngineInterface):
                 "link_counts": link_counts,
                 "link_counts_by_fact_type": link_counts_by_fact_type,
                 "link_breakdown": [
-                    {"fact_type": row["fact_type"], "link_type": row["link_type"], "count": row["count"]}
+                    {
+                        "fact_type": row["fact_type"],
+                        "link_type": row["link_type"],
+                        "count": row["count"],
+                    }
                     for row in link_breakdown_stats
                 ],
                 "operations": ops_by_status,
                 "total_documents": doc_count_row["count"] if doc_count_row else 0,
-                "last_consolidated_at": last_consolidated_at.isoformat() if last_consolidated_at else None,
-                "pending_consolidation": consolidation_row["pending"] if consolidation_row else 0,
+                "last_consolidated_at": (
+                    last_consolidated_at.isoformat() if last_consolidated_at else None
+                ),
+                "pending_consolidation": (
+                    consolidation_row["pending"] if consolidation_row else 0
+                ),
                 "total_observations": node_counts.get("observation", 0),
             }
 
@@ -5833,8 +6585,12 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="get_entity", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id, operation="get_entity", request_context=request_context
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
 
         async with acquire_with_retry(pool) as conn:
@@ -5855,8 +6611,14 @@ class MemoryEngine(MemoryEngineInterface):
             "id": str(entity_row["id"]),
             "canonical_name": entity_row["canonical_name"],
             "mention_count": entity_row["mention_count"],
-            "first_seen": entity_row["first_seen"].isoformat() if entity_row["first_seen"] else None,
-            "last_seen": entity_row["last_seen"].isoformat() if entity_row["last_seen"] else None,
+            "first_seen": (
+                entity_row["first_seen"].isoformat()
+                if entity_row["first_seen"]
+                else None
+            ),
+            "last_seen": (
+                entity_row["last_seen"].isoformat() if entity_row["last_seen"] else None
+            ),
             "metadata": entity_row["metadata"] or {},
             "observations": [],
         }
@@ -6124,7 +6886,10 @@ class MemoryEngine(MemoryEngineInterface):
 
             # Fetch source memories if requested and source_memory_ids exist
             if include_source_memories and result.get("source_memory_ids"):
-                source_ids = [uuid.UUID(sid) if isinstance(sid, str) else sid for sid in result["source_memory_ids"]]
+                source_ids = [
+                    uuid.UUID(sid) if isinstance(sid, str) else sid
+                    for sid in result["source_memory_ids"]
+                ]
                 source_rows = await conn.fetch(
                     f"""
                     SELECT id, text, fact_type, context, occurred_start, mentioned_at
@@ -6140,8 +6905,14 @@ class MemoryEngine(MemoryEngineInterface):
                         "text": r["text"],
                         "type": r["fact_type"],
                         "context": r["context"],
-                        "occurred_start": r["occurred_start"].isoformat() if r["occurred_start"] else None,
-                        "mentioned_at": r["mentioned_at"].isoformat() if r["mentioned_at"] else None,
+                        "occurred_start": (
+                            r["occurred_start"].isoformat()
+                            if r["occurred_start"]
+                            else None
+                        ),
+                        "mentioned_at": (
+                            r["mentioned_at"].isoformat() if r["mentioned_at"] else None
+                        ),
                     }
                     for r in source_rows
                 ]
@@ -6206,8 +6977,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="list_mental_models", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="list_mental_models",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
 
         async with acquire_with_retry(pool) as conn:
@@ -6259,14 +7036,18 @@ class MemoryEngine(MemoryEngineInterface):
 
         # Pre-operation validation (credit check / usage metering)
         if self._operation_validator:
-            from hindsight_api.extensions.operation_validator import MentalModelGetContext
+            from hindsight_api.extensions.operation_validator import (
+                MentalModelGetContext,
+            )
 
             ctx = MentalModelGetContext(
                 bank_id=bank_id,
                 mental_model_id=mental_model_id,
                 request_context=request_context,
             )
-            await self._validate_operation(self._operation_validator.validate_mental_model_get(ctx))
+            await self._validate_operation(
+                self._operation_validator.validate_mental_model_get(ctx)
+            )
 
         pool = await self._get_pool()
 
@@ -6287,7 +7068,9 @@ class MemoryEngine(MemoryEngineInterface):
 
         # Post-operation hook (usage recording)
         if result and self._operation_validator:
-            from hindsight_api.extensions.operation_validator import MentalModelGetResult
+            from hindsight_api.extensions.operation_validator import (
+                MentalModelGetResult,
+            )
 
             content = result.get("content", "")
             output_tokens = len(content) // 4 if content else 0
@@ -6302,7 +7085,9 @@ class MemoryEngine(MemoryEngineInterface):
             try:
                 await self._operation_validator.on_mental_model_get_complete(result_ctx)
             except Exception as hook_err:
-                logger.warning(f"Post-mental-model-get hook error (non-fatal): {hook_err}")
+                logger.warning(
+                    f"Post-mental-model-get hook error (non-fatal): {hook_err}"
+                )
 
         return result
 
@@ -6372,13 +7157,21 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="create_mental_model", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="create_mental_model",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
 
         # Generate embedding for the content
         embedding_text = f"{name} {content}"
-        embedding = await embedding_utils.generate_embeddings_batch(self.embeddings, [embedding_text])
+        embedding = await embedding_utils.generate_embeddings_batch(
+            self.embeddings, [embedding_text]
+        )
         # Convert embedding to string for asyncpg vector type
         embedding_str = str(embedding[0]) if embedding else None
 
@@ -6423,7 +7216,9 @@ class MemoryEngine(MemoryEngineInterface):
                     json.dumps(trigger) if trigger else None,
                 )
 
-        logger.info(f"[MENTAL_MODELS] Created pinned mental model '{name}' for bank {bank_id}")
+        logger.info(
+            f"[MENTAL_MODELS] Created pinned mental model '{name}' for bank {bank_id}"
+        )
         return self._row_to_mental_model(row)
 
     async def refresh_mental_model(
@@ -6452,7 +7247,9 @@ class MemoryEngine(MemoryEngineInterface):
         await self._authenticate_tenant(request_context)
 
         # Get the current mental model
-        mental_model = await self.get_mental_model(bank_id, mental_model_id, request_context=request_context)
+        mental_model = await self.get_mental_model(
+            bank_id, mental_model_id, request_context=request_context
+        )
         if not mental_model:
             return None
 
@@ -6468,7 +7265,9 @@ class MemoryEngine(MemoryEngineInterface):
             trigger_data = mental_model.get("trigger") or {}
             fact_types = trigger_data.get("fact_types")
             exclude_mental_models = trigger_data.get("exclude_mental_models", False)
-            stored_exclude_ids: list[str] = trigger_data.get("exclude_mental_model_ids") or []
+            stored_exclude_ids: list[str] = (
+                trigger_data.get("exclude_mental_model_ids") or []
+            )
 
             # Run reflect with the source query, excluding the mental model being refreshed
             # Skip creating a nested "hindsight.reflect" span since we already have "hindsight.mental_model_refresh"
@@ -6495,7 +7294,9 @@ class MemoryEngine(MemoryEngineInterface):
                         serialized_facts.append(
                             {
                                 "id": str(fact["id"]),
-                                "text": fact.get("text", fact.get("content", fact.get("name", ""))),
+                                "text": fact.get(
+                                    "text", fact.get("content", fact.get("name", ""))
+                                ),
                                 "type": fact_type,
                                 "context": fact.get("context", None),
                             }
@@ -6562,8 +7363,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="update_mental_model", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="update_mental_model",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
 
         async with acquire_with_retry(pool) as conn:
@@ -6596,14 +7403,23 @@ class MemoryEngine(MemoryEngineInterface):
                 # Record history entry with the previous content
                 if get_config().enable_mental_model_history:
                     history_entry = json.dumps(
-                        [{"previous_content": previous_content, "changed_at": datetime.now(timezone.utc).isoformat()}]
+                        [
+                            {
+                                "previous_content": previous_content,
+                                "changed_at": datetime.now(timezone.utc).isoformat(),
+                            }
+                        ]
                     )
-                    updates.append(f"history = COALESCE(history, '[]'::jsonb) || ${param_idx}::jsonb")
+                    updates.append(
+                        f"history = COALESCE(history, '[]'::jsonb) || ${param_idx}::jsonb"
+                    )
                     params.append(history_entry)
                     param_idx += 1
                 # Also update embedding (convert to string for asyncpg vector type)
                 embedding_text = f"{name or ''} {content}"
-                embedding = await embedding_utils.generate_embeddings_batch(self.embeddings, [embedding_text])
+                embedding = await embedding_utils.generate_embeddings_batch(
+                    self.embeddings, [embedding_text]
+                )
                 if embedding:
                     updates.append(f"embedding = ${param_idx}")
                     params.append(str(embedding[0]))
@@ -6671,8 +7487,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="delete_mental_model", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="delete_mental_model",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
 
         async with acquire_with_retry(pool) as conn:
@@ -6708,7 +7530,11 @@ class MemoryEngine(MemoryEngineInterface):
             "tags": row["tags"] or [],
             "max_tokens": row.get("max_tokens"),
             "trigger": trigger,
-            "last_refreshed_at": row["last_refreshed_at"].isoformat() if row["last_refreshed_at"] else None,
+            "last_refreshed_at": (
+                row["last_refreshed_at"].isoformat()
+                if row["last_refreshed_at"]
+                else None
+            ),
             "created_at": row["created_at"].isoformat() if row["created_at"] else None,
             "reflect_response": reflect_response,
         }
@@ -6750,8 +7576,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="list_directives", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="list_directives",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
 
         async with acquire_with_retry(pool) as conn:
@@ -6776,7 +7608,9 @@ class MemoryEngine(MemoryEngineInterface):
                 if tags_clause:
                     # Always include untagged directives; tagged ones must match the reflect tags
                     scoped_clause = tags_clause.replace("AND ", "", 1)
-                    filters.append(f"((tags IS NULL OR tags = '{{}}') OR ({scoped_clause}))")
+                    filters.append(
+                        f"((tags IS NULL OR tags = '{{}}') OR ({scoped_clause}))"
+                    )
                     params.extend(tags_params)
             elif isolation_mode:
                 # Isolation mode: only include directives with empty/null tags
@@ -6819,8 +7653,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="get_directive", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="get_directive",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
 
         async with acquire_with_retry(pool) as conn:
@@ -6865,8 +7705,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="create_directive", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="create_directive",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
 
         async with acquire_with_retry(pool) as conn:
@@ -6919,8 +7765,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="update_directive", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="update_directive",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
 
         # Build update query dynamically
@@ -6989,8 +7841,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="delete_directive", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="delete_directive",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
 
         async with acquire_with_retry(pool) as conn:
@@ -7043,8 +7901,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="list_operations", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="list_operations",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
 
         async with acquire_with_retry(pool) as conn:
@@ -7093,7 +7957,9 @@ class MemoryEngine(MemoryEngineInterface):
             for row in operations:
                 # Map DB status to API status (pending includes processing)
                 db_status = row["status"]
-                api_status = "pending" if db_status in ("pending", "processing") else db_status
+                api_status = (
+                    "pending" if db_status in ("pending", "processing") else db_status
+                )
 
                 operation_list.append(
                     {
@@ -7133,8 +7999,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankReadContext
 
-            ctx = BankReadContext(bank_id=bank_id, operation="get_operation_status", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_read(ctx))
+            ctx = BankReadContext(
+                bank_id=bank_id,
+                operation="get_operation_status",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_read(ctx)
+            )
         pool = await self._get_pool()
 
         op_uuid = uuid.UUID(operation_id)
@@ -7152,12 +8024,16 @@ class MemoryEngine(MemoryEngineInterface):
 
             if row:
                 # Check if this is a parent operation
-                result_metadata = json.loads(row["result_metadata"]) if row["result_metadata"] else {}
+                result_metadata = (
+                    json.loads(row["result_metadata"]) if row["result_metadata"] else {}
+                )
                 is_parent = result_metadata.get("is_parent", False)
 
                 # Use status from database (parent status is updated when all children complete/fail)
                 db_status = row["status"]
-                api_status = "pending" if db_status in ("pending", "processing") else db_status
+                api_status = (
+                    "pending" if db_status in ("pending", "processing") else db_status
+                )
 
                 # For parent operations, include child operations list
                 if is_parent:
@@ -7182,7 +8058,9 @@ class MemoryEngine(MemoryEngineInterface):
 
                     for child_row in child_rows:
                         child_metadata = (
-                            json.loads(child_row["result_metadata"]) if child_row["result_metadata"] else {}
+                            json.loads(child_row["result_metadata"])
+                            if child_row["result_metadata"]
+                            else {}
                         )
                         child_status = child_row["status"]
 
@@ -7190,7 +8068,9 @@ class MemoryEngine(MemoryEngineInterface):
                             {
                                 "operation_id": str(child_row["operation_id"]),
                                 "status": child_status,
-                                "sub_batch_index": child_metadata.get("sub_batch_index"),
+                                "sub_batch_index": child_metadata.get(
+                                    "sub_batch_index"
+                                ),
                                 "items_count": child_metadata.get("items_count"),
                                 "error_message": child_row["error_message"],
                             }
@@ -7224,9 +8104,17 @@ class MemoryEngine(MemoryEngineInterface):
                         "operation_id": operation_id,
                         "status": api_status,
                         "operation_type": row["operation_type"],
-                        "created_at": row["created_at"].isoformat() if row["created_at"] else None,
-                        "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None,
-                        "completed_at": row["completed_at"].isoformat() if row["completed_at"] else None,
+                        "created_at": (
+                            row["created_at"].isoformat() if row["created_at"] else None
+                        ),
+                        "updated_at": (
+                            row["updated_at"].isoformat() if row["updated_at"] else None
+                        ),
+                        "completed_at": (
+                            row["completed_at"].isoformat()
+                            if row["completed_at"]
+                            else None
+                        ),
                         "error_message": row["error_message"],
                         "result_metadata": result_metadata,
                         "child_operations": child_statuses,
@@ -7237,9 +8125,17 @@ class MemoryEngine(MemoryEngineInterface):
                         "operation_id": operation_id,
                         "status": api_status,
                         "operation_type": row["operation_type"],
-                        "created_at": row["created_at"].isoformat() if row["created_at"] else None,
-                        "updated_at": row["updated_at"].isoformat() if row["updated_at"] else None,
-                        "completed_at": row["completed_at"].isoformat() if row["completed_at"] else None,
+                        "created_at": (
+                            row["created_at"].isoformat() if row["created_at"] else None
+                        ),
+                        "updated_at": (
+                            row["updated_at"].isoformat() if row["updated_at"] else None
+                        ),
+                        "completed_at": (
+                            row["completed_at"].isoformat()
+                            if row["completed_at"]
+                            else None
+                        ),
                         "error_message": row["error_message"],
                         "result_metadata": result_metadata,
                     }
@@ -7267,8 +8163,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="cancel_operation", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="cancel_operation",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
 
         op_uuid = uuid.UUID(operation_id)
@@ -7282,10 +8184,15 @@ class MemoryEngine(MemoryEngineInterface):
             )
 
             if not result:
-                raise ValueError(f"Operation {operation_id} not found for bank {bank_id}")
+                raise ValueError(
+                    f"Operation {operation_id} not found for bank {bank_id}"
+                )
 
             # Delete the operation
-            await conn.execute(f"DELETE FROM {fq_table('async_operations')} WHERE operation_id = $1", op_uuid)
+            await conn.execute(
+                f"DELETE FROM {fq_table('async_operations')} WHERE operation_id = $1",
+                op_uuid,
+            )
 
             return {
                 "success": True,
@@ -7308,8 +8215,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="retry_operation", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="retry_operation",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
 
         op_uuid = uuid.UUID(operation_id)
@@ -7322,7 +8235,9 @@ class MemoryEngine(MemoryEngineInterface):
             )
 
             if not row:
-                raise ValueError(f"Operation {operation_id} not found for bank {bank_id}")
+                raise ValueError(
+                    f"Operation {operation_id} not found for bank {bank_id}"
+                )
 
             if row["status"] != "failed":
                 raise OperationValidationError(
@@ -7365,8 +8280,14 @@ class MemoryEngine(MemoryEngineInterface):
         if self._operation_validator:
             from hindsight_api.extensions import BankWriteContext
 
-            ctx = BankWriteContext(bank_id=bank_id, operation="update_bank", request_context=request_context)
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            ctx = BankWriteContext(
+                bank_id=bank_id,
+                operation="update_bank",
+                request_context=request_context,
+            )
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
         pool = await self._get_pool()
 
         async with acquire_with_retry(pool) as conn:
@@ -7480,7 +8401,9 @@ class MemoryEngine(MemoryEngineInterface):
         # kept for symmetry and to support any future notification mechanisms.
         await self._task_backend.submit_task(full_payload)
 
-        logger.info(f"{operation_type} task queued for bank_id={bank_id}, operation_id={operation_id}")
+        logger.info(
+            f"{operation_type} task queued for bank_id={bank_id}, operation_id={operation_id}"
+        )
 
         return {
             "operation_id": str(operation_id),
@@ -7511,15 +8434,21 @@ class MemoryEngine(MemoryEngineInterface):
                 contents=[dict(c) for c in contents],
                 request_context=request_context,
             )
-            await self._validate_operation(self._operation_validator.validate_retain(ctx))
+            await self._validate_operation(
+                self._operation_validator.validate_retain(ctx)
+            )
 
         # Validate no duplicate document_ids in the batch
         # Having duplicate document_ids causes race conditions in document upserts during parallel processing
-        doc_ids = [item.get("document_id") for item in contents if item.get("document_id")]
+        doc_ids = [
+            item.get("document_id") for item in contents if item.get("document_id")
+        ]
         if len(doc_ids) != len(set(doc_ids)):
             from collections import Counter
 
-            duplicates = [doc_id for doc_id, count in Counter(doc_ids).items() if count > 1]
+            duplicates = [
+                doc_id for doc_id, count in Counter(doc_ids).items() if count > 1
+            ]
             raise ValueError(
                 f"Batch contains duplicate document_ids: {duplicates}. "
                 f"Each content item in a batch must have a unique document_id to avoid race conditions."
@@ -7589,12 +8518,16 @@ class MemoryEngine(MemoryEngineInterface):
                 "pending",  # Will be updated by status aggregation
             )
 
-        logger.info(f"Created parent operation {parent_operation_id} for {len(sub_batches)} sub-batch(es)")
+        logger.info(
+            f"Created parent operation {parent_operation_id} for {len(sub_batches)} sub-batch(es)"
+        )
 
         # Submit child operations for each sub-batch
         for i, sub_batch in enumerate(sub_batches, 1):
             if len(sub_batches) > 1:
-                sub_batch_tokens = sum(count_tokens(item.get("content", "")) for item in sub_batch)
+                sub_batch_tokens = sum(
+                    count_tokens(item.get("content", "")) for item in sub_batch
+                )
                 logger.info(
                     f"Submitting sub-batch {i}/{len(sub_batches)}: {len(sub_batch)} items, {sub_batch_tokens:,} tokens"
                 )
@@ -7668,7 +8601,9 @@ class MemoryEngine(MemoryEngineInterface):
 
         # Validate file count
         if len(file_items) > config.file_conversion_max_batch_size:
-            raise ValueError(f"Too many files. Maximum {config.file_conversion_max_batch_size} files per request.")
+            raise ValueError(
+                f"Too many files. Maximum {config.file_conversion_max_batch_size} files per request."
+            )
 
         # Read all files and validate total batch size
         files_data = []
@@ -7767,9 +8702,13 @@ class MemoryEngine(MemoryEngineInterface):
             from hindsight_api.extensions import BankWriteContext
 
             ctx = BankWriteContext(
-                bank_id=bank_id, operation="submit_async_consolidation", request_context=request_context
+                bank_id=bank_id,
+                operation="submit_async_consolidation",
+                request_context=request_context,
             )
-            await self._validate_operation(self._operation_validator.validate_bank_write(ctx))
+            await self._validate_operation(
+                self._operation_validator.validate_bank_write(ctx)
+            )
 
         # Pass tenant_id and api_key_id through task payload so the worker
         # can provide request context to extension hooks (e.g., usage metering
@@ -7811,19 +8750,27 @@ class MemoryEngine(MemoryEngineInterface):
 
         # Pre-operation validation (credit check)
         if self._operation_validator:
-            from hindsight_api.extensions.operation_validator import MentalModelRefreshContext
+            from hindsight_api.extensions.operation_validator import (
+                MentalModelRefreshContext,
+            )
 
             ctx = MentalModelRefreshContext(
                 bank_id=bank_id,
                 mental_model_id=mental_model_id,
                 request_context=request_context,
             )
-            await self._validate_operation(self._operation_validator.validate_mental_model_refresh(ctx))
+            await self._validate_operation(
+                self._operation_validator.validate_mental_model_refresh(ctx)
+            )
 
         # Verify mental model exists
-        mental_model = await self.get_mental_model(bank_id, mental_model_id, request_context=request_context)
+        mental_model = await self.get_mental_model(
+            bank_id, mental_model_id, request_context=request_context
+        )
         if not mental_model:
-            raise ValueError(f"Mental model {mental_model_id} not found in bank {bank_id}")
+            raise ValueError(
+                f"Mental model {mental_model_id} not found in bank {bank_id}"
+            )
 
         # Pass tenant_id and api_key_id through task payload so the worker
         # can provide request context to extension hooks.
@@ -7840,6 +8787,9 @@ class MemoryEngine(MemoryEngineInterface):
             operation_type="refresh_mental_model",
             task_type="refresh_mental_model",
             task_payload=task_payload,
-            result_metadata={"mental_model_id": mental_model_id, "name": mental_model["name"]},
+            result_metadata={
+                "mental_model_id": mental_model_id,
+                "name": mental_model["name"],
+            },
             dedupe_by_bank=False,
         )

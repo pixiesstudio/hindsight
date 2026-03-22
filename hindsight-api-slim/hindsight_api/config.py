@@ -36,7 +36,9 @@ class StaticConfigProxy:
 
     def __init__(self, config: "HindsightConfig"):
         object.__setattr__(self, "_config", config)
-        object.__setattr__(self, "_configurable_fields", HindsightConfig.get_configurable_fields())
+        object.__setattr__(
+            self, "_configurable_fields", HindsightConfig.get_configurable_fields()
+        )
 
     def __getattribute__(self, name: str):
         if name.startswith("_"):
@@ -54,7 +56,9 @@ class StaticConfigProxy:
         return getattr(config, name)
 
     def __setattr__(self, name: str, value):
-        raise AttributeError("Config is read-only. Modifications must go through ConfigResolver.")
+        raise AttributeError(
+            "Config is read-only. Modifications must go through ConfigResolver."
+        )
 
 
 # Configuration field markers for hierarchical configuration
@@ -155,6 +159,7 @@ ENV_REFLECT_LLM_MAX_RETRIES = "HINDSIGHT_API_REFLECT_LLM_MAX_RETRIES"
 ENV_REFLECT_LLM_INITIAL_BACKOFF = "HINDSIGHT_API_REFLECT_LLM_INITIAL_BACKOFF"
 ENV_REFLECT_LLM_MAX_BACKOFF = "HINDSIGHT_API_REFLECT_LLM_MAX_BACKOFF"
 ENV_REFLECT_LLM_TIMEOUT = "HINDSIGHT_API_REFLECT_LLM_TIMEOUT"
+ENV_REFLECT_WALL_TIMEOUT = "HINDSIGHT_API_REFLECT_WALL_TIMEOUT"
 
 ENV_CONSOLIDATION_LLM_PROVIDER = "HINDSIGHT_API_CONSOLIDATION_LLM_PROVIDER"
 ENV_CONSOLIDATION_LLM_API_KEY = "HINDSIGHT_API_CONSOLIDATION_LLM_API_KEY"
@@ -162,14 +167,18 @@ ENV_CONSOLIDATION_LLM_MODEL = "HINDSIGHT_API_CONSOLIDATION_LLM_MODEL"
 ENV_CONSOLIDATION_LLM_BASE_URL = "HINDSIGHT_API_CONSOLIDATION_LLM_BASE_URL"
 ENV_CONSOLIDATION_LLM_MAX_CONCURRENT = "HINDSIGHT_API_CONSOLIDATION_LLM_MAX_CONCURRENT"
 ENV_CONSOLIDATION_LLM_MAX_RETRIES = "HINDSIGHT_API_CONSOLIDATION_LLM_MAX_RETRIES"
-ENV_CONSOLIDATION_LLM_INITIAL_BACKOFF = "HINDSIGHT_API_CONSOLIDATION_LLM_INITIAL_BACKOFF"
+ENV_CONSOLIDATION_LLM_INITIAL_BACKOFF = (
+    "HINDSIGHT_API_CONSOLIDATION_LLM_INITIAL_BACKOFF"
+)
 ENV_CONSOLIDATION_LLM_MAX_BACKOFF = "HINDSIGHT_API_CONSOLIDATION_LLM_MAX_BACKOFF"
 ENV_CONSOLIDATION_LLM_TIMEOUT = "HINDSIGHT_API_CONSOLIDATION_LLM_TIMEOUT"
 
 ENV_EMBEDDINGS_PROVIDER = "HINDSIGHT_API_EMBEDDINGS_PROVIDER"
 ENV_EMBEDDINGS_LOCAL_MODEL = "HINDSIGHT_API_EMBEDDINGS_LOCAL_MODEL"
 ENV_EMBEDDINGS_LOCAL_FORCE_CPU = "HINDSIGHT_API_EMBEDDINGS_LOCAL_FORCE_CPU"
-ENV_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE = "HINDSIGHT_API_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE"
+ENV_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE = (
+    "HINDSIGHT_API_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE"
+)
 ENV_EMBEDDINGS_TEI_URL = "HINDSIGHT_API_EMBEDDINGS_TEI_URL"
 ENV_EMBEDDINGS_OPENAI_API_KEY = "HINDSIGHT_API_EMBEDDINGS_OPENAI_API_KEY"
 ENV_EMBEDDINGS_OPENAI_MODEL = "HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL"
@@ -193,7 +202,9 @@ ENV_EMBEDDINGS_LITELLM_MODEL = "HINDSIGHT_API_EMBEDDINGS_LITELLM_MODEL"
 ENV_RERANKER_LITELLM_API_BASE = "HINDSIGHT_API_RERANKER_LITELLM_API_BASE"
 ENV_RERANKER_LITELLM_API_KEY = "HINDSIGHT_API_RERANKER_LITELLM_API_KEY"
 ENV_RERANKER_LITELLM_MODEL = "HINDSIGHT_API_RERANKER_LITELLM_MODEL"
-ENV_RERANKER_LITELLM_MAX_TOKENS_PER_DOC = "HINDSIGHT_API_RERANKER_LITELLM_MAX_TOKENS_PER_DOC"
+ENV_RERANKER_LITELLM_MAX_TOKENS_PER_DOC = (
+    "HINDSIGHT_API_RERANKER_LITELLM_MAX_TOKENS_PER_DOC"
+)
 
 # LiteLLM SDK configuration (direct API access, no proxy needed)
 ENV_EMBEDDINGS_LITELLM_SDK_API_KEY = "HINDSIGHT_API_EMBEDDINGS_LITELLM_SDK_API_KEY"
@@ -271,7 +282,9 @@ ENV_RETAIN_DEFAULT_STRATEGY = "HINDSIGHT_API_RETAIN_DEFAULT_STRATEGY"
 ENV_RETAIN_BATCH_TOKENS = "HINDSIGHT_API_RETAIN_BATCH_TOKENS"
 ENV_RETAIN_ENTITY_LOOKUP = "HINDSIGHT_API_RETAIN_ENTITY_LOOKUP"
 ENV_RETAIN_BATCH_ENABLED = "HINDSIGHT_API_RETAIN_BATCH_ENABLED"
-ENV_RETAIN_BATCH_POLL_INTERVAL_SECONDS = "HINDSIGHT_API_RETAIN_BATCH_POLL_INTERVAL_SECONDS"
+ENV_RETAIN_BATCH_POLL_INTERVAL_SECONDS = (
+    "HINDSIGHT_API_RETAIN_BATCH_POLL_INTERVAL_SECONDS"
+)
 
 # File storage configuration
 ENV_FILE_STORAGE_TYPE = "HINDSIGHT_API_FILE_STORAGE_TYPE"
@@ -279,9 +292,13 @@ ENV_FILE_STORAGE_S3_BUCKET = "HINDSIGHT_API_FILE_STORAGE_S3_BUCKET"
 ENV_FILE_STORAGE_S3_REGION = "HINDSIGHT_API_FILE_STORAGE_S3_REGION"
 ENV_FILE_STORAGE_S3_ENDPOINT = "HINDSIGHT_API_FILE_STORAGE_S3_ENDPOINT"
 ENV_FILE_STORAGE_S3_ACCESS_KEY_ID = "HINDSIGHT_API_FILE_STORAGE_S3_ACCESS_KEY_ID"
-ENV_FILE_STORAGE_S3_SECRET_ACCESS_KEY = "HINDSIGHT_API_FILE_STORAGE_S3_SECRET_ACCESS_KEY"
+ENV_FILE_STORAGE_S3_SECRET_ACCESS_KEY = (
+    "HINDSIGHT_API_FILE_STORAGE_S3_SECRET_ACCESS_KEY"
+)
 ENV_FILE_STORAGE_GCS_BUCKET = "HINDSIGHT_API_FILE_STORAGE_GCS_BUCKET"
-ENV_FILE_STORAGE_GCS_SERVICE_ACCOUNT_KEY = "HINDSIGHT_API_FILE_STORAGE_GCS_SERVICE_ACCOUNT_KEY"
+ENV_FILE_STORAGE_GCS_SERVICE_ACCOUNT_KEY = (
+    "HINDSIGHT_API_FILE_STORAGE_GCS_SERVICE_ACCOUNT_KEY"
+)
 ENV_FILE_STORAGE_AZURE_CONTAINER = "HINDSIGHT_API_FILE_STORAGE_AZURE_CONTAINER"
 ENV_FILE_STORAGE_AZURE_ACCOUNT_NAME = "HINDSIGHT_API_FILE_STORAGE_AZURE_ACCOUNT_NAME"
 ENV_FILE_STORAGE_AZURE_ACCOUNT_KEY = "HINDSIGHT_API_FILE_STORAGE_AZURE_ACCOUNT_KEY"
@@ -289,7 +306,9 @@ ENV_FILE_PARSER = "HINDSIGHT_API_FILE_PARSER"
 ENV_FILE_PARSER_ALLOWLIST = "HINDSIGHT_API_FILE_PARSER_ALLOWLIST"
 ENV_FILE_PARSER_IRIS_TOKEN = "HINDSIGHT_API_FILE_PARSER_IRIS_TOKEN"
 ENV_FILE_PARSER_IRIS_ORG_ID = "HINDSIGHT_API_FILE_PARSER_IRIS_ORG_ID"
-ENV_FILE_CONVERSION_MAX_BATCH_SIZE_MB = "HINDSIGHT_API_FILE_CONVERSION_MAX_BATCH_SIZE_MB"
+ENV_FILE_CONVERSION_MAX_BATCH_SIZE_MB = (
+    "HINDSIGHT_API_FILE_CONVERSION_MAX_BATCH_SIZE_MB"
+)
 ENV_FILE_CONVERSION_MAX_BATCH_SIZE = "HINDSIGHT_API_FILE_CONVERSION_MAX_BATCH_SIZE"
 ENV_ENABLE_FILE_UPLOAD_API = "HINDSIGHT_API_ENABLE_FILE_UPLOAD_API"
 ENV_FILE_DELETE_AFTER_RETAIN = "HINDSIGHT_API_FILE_DELETE_AFTER_RETAIN"
@@ -299,7 +318,9 @@ ENV_ENABLE_OBSERVATIONS = "HINDSIGHT_API_ENABLE_OBSERVATIONS"
 ENV_CONSOLIDATION_BATCH_SIZE = "HINDSIGHT_API_CONSOLIDATION_BATCH_SIZE"
 ENV_CONSOLIDATION_LLM_BATCH_SIZE = "HINDSIGHT_API_CONSOLIDATION_LLM_BATCH_SIZE"
 ENV_CONSOLIDATION_MAX_TOKENS = "HINDSIGHT_API_CONSOLIDATION_MAX_TOKENS"
-ENV_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS = "HINDSIGHT_API_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS"
+ENV_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS = (
+    "HINDSIGHT_API_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS"
+)
 ENV_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS_PER_OBSERVATION = (
     "HINDSIGHT_API_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS_PER_OBSERVATION"
 )
@@ -311,7 +332,9 @@ ENV_ENABLE_MENTAL_MODEL_HISTORY = "HINDSIGHT_API_ENABLE_MENTAL_MODEL_HISTORY"
 ENV_WEBHOOK_URL = "HINDSIGHT_API_WEBHOOK_URL"
 ENV_WEBHOOK_SECRET = "HINDSIGHT_API_WEBHOOK_SECRET"
 ENV_WEBHOOK_EVENT_TYPES = "HINDSIGHT_API_WEBHOOK_EVENT_TYPES"
-ENV_WEBHOOK_DELIVERY_POLL_INTERVAL_SECONDS = "HINDSIGHT_API_WEBHOOK_DELIVERY_POLL_INTERVAL_SECONDS"
+ENV_WEBHOOK_DELIVERY_POLL_INTERVAL_SECONDS = (
+    "HINDSIGHT_API_WEBHOOK_DELIVERY_POLL_INTERVAL_SECONDS"
+)
 
 # Optimization flags
 ENV_SKIP_LLM_VERIFICATION = "HINDSIGHT_API_SKIP_LLM_VERIFICATION"
@@ -367,8 +390,12 @@ PROVIDER_DEFAULT_MODELS = {
 DEFAULT_LLM_MODEL = "gpt-4o-mini"  # Fallback if provider not in table
 DEFAULT_LLM_MAX_CONCURRENT = 32
 DEFAULT_LLM_MAX_RETRIES = 10  # Max retry attempts for LLM API calls
-DEFAULT_LLM_INITIAL_BACKOFF = 1.0  # Initial backoff in seconds for retry exponential backoff
-DEFAULT_LLM_MAX_BACKOFF = 60.0  # Max backoff cap in seconds for retry exponential backoff
+DEFAULT_LLM_INITIAL_BACKOFF = (
+    1.0  # Initial backoff in seconds for retry exponential backoff
+)
+DEFAULT_LLM_MAX_BACKOFF = (
+    60.0  # Max backoff cap in seconds for retry exponential backoff
+)
 DEFAULT_LLM_TIMEOUT = 120.0  # seconds
 
 # Vertex AI defaults
@@ -381,25 +408,37 @@ DEFAULT_LLM_GEMINI_SAFETY_SETTINGS = None  # None = use Gemini default safety se
 
 DEFAULT_EMBEDDINGS_PROVIDER = "local"
 DEFAULT_EMBEDDINGS_LOCAL_MODEL = "BAAI/bge-small-en-v1.5"
-DEFAULT_EMBEDDINGS_LOCAL_FORCE_CPU = False  # Force CPU mode for local embeddings (avoids MPS/XPC issues on macOS)
-DEFAULT_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE = False  # Security: disabled by default, required for some models
+DEFAULT_EMBEDDINGS_LOCAL_FORCE_CPU = (
+    False  # Force CPU mode for local embeddings (avoids MPS/XPC issues on macOS)
+)
+DEFAULT_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE = (
+    False  # Security: disabled by default, required for some models
+)
 DEFAULT_EMBEDDINGS_OPENAI_MODEL = "text-embedding-3-small"
 DEFAULT_EMBEDDING_DIMENSION = 384
 
 DEFAULT_RERANKER_PROVIDER = "local"
 DEFAULT_RERANKER_LOCAL_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
-DEFAULT_RERANKER_LOCAL_FORCE_CPU = False  # Force CPU mode for local reranker (avoids MPS/XPC issues on macOS)
-DEFAULT_RERANKER_LOCAL_MAX_CONCURRENT = 4  # Limit concurrent CPU-bound reranking to prevent thrashing
-DEFAULT_RERANKER_LOCAL_TRUST_REMOTE_CODE = (
-    False  # Security: disabled by default, required for some models like jina-reranker-v2
+DEFAULT_RERANKER_LOCAL_FORCE_CPU = (
+    False  # Force CPU mode for local reranker (avoids MPS/XPC issues on macOS)
 )
-DEFAULT_RERANKER_LOCAL_FP16 = False  # FP16 inference: opt-in, faster on MPS/CUDA (not CPU)
-DEFAULT_RERANKER_LOCAL_BUCKET_BATCHING = False  # Length-sorted bucket batching: opt-in, 36-54% speedup
+DEFAULT_RERANKER_LOCAL_MAX_CONCURRENT = (
+    4  # Limit concurrent CPU-bound reranking to prevent thrashing
+)
+DEFAULT_RERANKER_LOCAL_TRUST_REMOTE_CODE = False  # Security: disabled by default, required for some models like jina-reranker-v2
+DEFAULT_RERANKER_LOCAL_FP16 = (
+    False  # FP16 inference: opt-in, faster on MPS/CUDA (not CPU)
+)
+DEFAULT_RERANKER_LOCAL_BUCKET_BATCHING = (
+    False  # Length-sorted bucket batching: opt-in, 36-54% speedup
+)
 DEFAULT_RERANKER_LOCAL_BATCH_SIZE = 32  # Batch size for local reranker predict() calls
 DEFAULT_RERANKER_TEI_BATCH_SIZE = 128
 DEFAULT_RERANKER_TEI_MAX_CONCURRENT = 8
 DEFAULT_RERANKER_MAX_CANDIDATES = 300
-DEFAULT_RERANKER_FLASHRANK_MODEL = "ms-marco-MiniLM-L-12-v2"  # Best balance of speed and quality
+DEFAULT_RERANKER_FLASHRANK_MODEL = (
+    "ms-marco-MiniLM-L-12-v2"  # Best balance of speed and quality
+)
 DEFAULT_RERANKER_FLASHRANK_CACHE_DIR = None  # Use default cache directory
 
 DEFAULT_EMBEDDINGS_COHERE_MODEL = "embed-english-v3.0"
@@ -435,7 +474,9 @@ DEFAULT_ENABLE_BANK_CONFIG_API = True
 DEFAULT_GRAPH_RETRIEVER = "link_expansion"  # Options: "link_expansion", "mpfp", "bfs"
 DEFAULT_MPFP_TOP_K_NEIGHBORS = 20  # Fan-out limit per node in MPFP graph traversal
 DEFAULT_RECALL_MAX_CONCURRENT = 32  # Max concurrent recall operations per worker
-DEFAULT_RECALL_CONNECTION_BUDGET = 4  # Max concurrent DB connections per recall operation
+DEFAULT_RECALL_CONNECTION_BUDGET = (
+    4  # Max concurrent DB connections per recall operation
+)
 DEFAULT_RECALL_MAX_QUERY_TOKENS = 500  # Maximum tokens allowed in recall query
 DEFAULT_MENTAL_MODEL_REFRESH_CONCURRENCY = 8  # Max concurrent mental model refreshes
 
@@ -443,40 +484,76 @@ DEFAULT_MENTAL_MODEL_REFRESH_CONCURRENCY = 8  # Max concurrent mental model refr
 DEFAULT_RETAIN_MAX_COMPLETION_TOKENS = 64000  # Max tokens for fact extraction LLM call
 DEFAULT_RETAIN_CHUNK_SIZE = 3000  # Max chars per chunk for fact extraction
 DEFAULT_RETAIN_EXTRACT_CAUSAL_LINKS = True  # Extract causal links between facts
-DEFAULT_RETAIN_EXTRACTION_MODE = "concise"  # Extraction mode: "concise", "verbose", or "custom"
-RETAIN_EXTRACTION_MODES = ("concise", "verbose", "custom", "verbatim", "chunks")  # Allowed extraction modes
-DEFAULT_RETAIN_MISSION = None  # Declarative spec of what to retain (injected into any extraction mode)
-DEFAULT_RETAIN_CUSTOM_INSTRUCTIONS = None  # Custom extraction guidelines (only used when mode="custom")
-DEFAULT_RETAIN_DEFAULT_STRATEGY = None  # Default strategy name (None = no strategy override)
-DEFAULT_RETAIN_STRATEGIES: dict | None = None  # Named retain strategies (dict of name → config overrides)
-DEFAULT_RETAIN_BATCH_TOKENS = 10_000  # ~40KB of text  # Max chars per sub-batch for async retain auto-splitting
+DEFAULT_RETAIN_EXTRACTION_MODE = (
+    "concise"  # Extraction mode: "concise", "verbose", or "custom"
+)
+RETAIN_EXTRACTION_MODES = (
+    "concise",
+    "verbose",
+    "custom",
+    "verbatim",
+    "chunks",
+)  # Allowed extraction modes
+DEFAULT_RETAIN_MISSION = (
+    None  # Declarative spec of what to retain (injected into any extraction mode)
+)
+DEFAULT_RETAIN_CUSTOM_INSTRUCTIONS = (
+    None  # Custom extraction guidelines (only used when mode="custom")
+)
+DEFAULT_RETAIN_DEFAULT_STRATEGY = (
+    None  # Default strategy name (None = no strategy override)
+)
+DEFAULT_RETAIN_STRATEGIES: dict | None = (
+    None  # Named retain strategies (dict of name → config overrides)
+)
+DEFAULT_RETAIN_BATCH_TOKENS = (
+    10_000  # ~40KB of text  # Max chars per sub-batch for async retain auto-splitting
+)
 DEFAULT_RETAIN_ENTITY_LOOKUP = "trigram"  # "full" or "trigram"
-DEFAULT_RETAIN_BATCH_ENABLED = False  # Use LLM Batch API for fact extraction (only when async=True)
+DEFAULT_RETAIN_BATCH_ENABLED = (
+    False  # Use LLM Batch API for fact extraction (only when async=True)
+)
 DEFAULT_RETAIN_BATCH_POLL_INTERVAL_SECONDS = 60  # Batch API polling interval in seconds
 
 # File storage defaults
 DEFAULT_FILE_STORAGE_TYPE = "native"  # PostgreSQL BYTEA storage
 DEFAULT_FILE_PARSER = "markitdown"  # Default parser fallback chain (comma-separated, e.g. "iris,markitdown")
-DEFAULT_FILE_PARSER_ALLOWLIST = None  # Allowlist of parsers clients may request (None = all registered parsers)
-DEFAULT_FILE_CONVERSION_MAX_BATCH_SIZE_MB = 100  # Max total batch size in MB (all files combined)
+DEFAULT_FILE_PARSER_ALLOWLIST = (
+    None  # Allowlist of parsers clients may request (None = all registered parsers)
+)
+DEFAULT_FILE_CONVERSION_MAX_BATCH_SIZE_MB = (
+    100  # Max total batch size in MB (all files combined)
+)
 DEFAULT_FILE_CONVERSION_MAX_BATCH_SIZE = 10  # Max files per batch upload
 DEFAULT_ENABLE_FILE_UPLOAD_API = True  # Enable file upload endpoint
-DEFAULT_FILE_DELETE_AFTER_RETAIN = True  # Delete file bytes after retain (saves storage)
+DEFAULT_FILE_DELETE_AFTER_RETAIN = (
+    True  # Delete file bytes after retain (saves storage)
+)
 
 # Observations defaults (consolidated knowledge from facts)
 DEFAULT_ENABLE_OBSERVATIONS = True  # Observations enabled by default
-DEFAULT_ENABLE_OBSERVATION_HISTORY = True  # Observation history tracking enabled by default
-DEFAULT_ENABLE_MENTAL_MODEL_HISTORY = True  # Mental model history tracking enabled by default
-DEFAULT_CONSOLIDATION_BATCH_SIZE = 50  # Memories to load per batch (internal memory optimization)
-DEFAULT_CONSOLIDATION_LLM_BATCH_SIZE = 8  # Facts per LLM call (1 = no batching; >1 = batch mode)
-DEFAULT_CONSOLIDATION_MAX_TOKENS = 512  # Max tokens for recall when finding related observations
+DEFAULT_ENABLE_OBSERVATION_HISTORY = (
+    True  # Observation history tracking enabled by default
+)
+DEFAULT_ENABLE_MENTAL_MODEL_HISTORY = (
+    True  # Mental model history tracking enabled by default
+)
+DEFAULT_CONSOLIDATION_BATCH_SIZE = (
+    50  # Memories to load per batch (internal memory optimization)
+)
+DEFAULT_CONSOLIDATION_LLM_BATCH_SIZE = (
+    8  # Facts per LLM call (1 = no batching; >1 = batch mode)
+)
+DEFAULT_CONSOLIDATION_MAX_TOKENS = (
+    512  # Max tokens for recall when finding related observations
+)
 DEFAULT_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS = (
     -1
 )  # Total token budget for source facts in consolidation recall (-1 = unlimited)
-DEFAULT_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS_PER_OBSERVATION = (
-    256  # Max tokens of source facts per observation in consolidation prompt (-1 = unlimited)
+DEFAULT_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS_PER_OBSERVATION = 256  # Max tokens of source facts per observation in consolidation prompt (-1 = unlimited)
+DEFAULT_OBSERVATIONS_MISSION = (
+    None  # Declarative spec of what observations are for this bank
 )
-DEFAULT_OBSERVATIONS_MISSION = None  # Declarative spec of what observations are for this bank
 
 # Database migrations
 DEFAULT_RUN_MIGRATIONS_ON_STARTUP = True
@@ -494,11 +571,18 @@ DEFAULT_WORKER_POLL_INTERVAL_MS = 500  # Poll database every 500ms
 DEFAULT_WORKER_MAX_RETRIES = 3  # Max retries before marking task failed
 DEFAULT_WORKER_HTTP_PORT = 8889  # HTTP port for worker metrics/health
 DEFAULT_WORKER_MAX_SLOTS = 10  # Total concurrent tasks per worker
-DEFAULT_WORKER_CONSOLIDATION_MAX_SLOTS = 2  # Max concurrent consolidation tasks per worker
+DEFAULT_WORKER_CONSOLIDATION_MAX_SLOTS = (
+    2  # Max concurrent consolidation tasks per worker
+)
 
 # Reflect agent settings
 DEFAULT_REFLECT_MAX_ITERATIONS = 10  # Max tool call iterations before forcing response
-DEFAULT_REFLECT_MAX_CONTEXT_TOKENS = 100_000  # Max accumulated context tokens before forcing final prompt
+DEFAULT_REFLECT_MAX_CONTEXT_TOKENS = (
+    100_000  # Max accumulated context tokens before forcing final prompt
+)
+DEFAULT_REFLECT_WALL_TIMEOUT = (
+    300.0  # Wall-clock timeout for entire reflect operation (seconds)
+)
 
 # Disposition defaults (None = not set, fall back to bank DB value or 3)
 DEFAULT_DISPOSITION_SKEPTICISM = None
@@ -536,8 +620,12 @@ EMBEDDING_DIMENSION = DEFAULT_EMBEDDING_DIMENSION
 # Webhook configuration defaults
 DEFAULT_WEBHOOK_URL = None  # None = no global webhook configured
 DEFAULT_WEBHOOK_SECRET = None  # None = no signing
-DEFAULT_WEBHOOK_EVENT_TYPES = "consolidation.completed"  # Comma-separated; default = all supported events
-DEFAULT_WEBHOOK_DELIVERY_POLL_INTERVAL_SECONDS = 30  # How often to poll for pending deliveries
+DEFAULT_WEBHOOK_EVENT_TYPES = (
+    "consolidation.completed"  # Comma-separated; default = all supported events
+)
+DEFAULT_WEBHOOK_DELIVERY_POLL_INTERVAL_SECONDS = (
+    30  # How often to poll for pending deliveries
+)
 
 
 class JsonFormatter(logging.Formatter):
@@ -613,7 +701,9 @@ class HindsightConfig:
     llm_max_backoff: float
     llm_timeout: float
     llm_groq_service_tier: str  # Groq: "on_demand", "flex", or "auto"
-    llm_openai_service_tier: str | None  # OpenAI: None (default) or "flex" (50% cheaper)
+    llm_openai_service_tier: (
+        str | None
+    )  # OpenAI: None (default) or "flex" (50% cheaper)
 
     # Vertex AI configuration
     llm_vertexai_project_id: str | None
@@ -735,17 +825,33 @@ class HindsightConfig:
     file_storage_s3_region: str | None  # S3 region (optional, uses SDK default)
     file_storage_s3_endpoint: str | None  # S3 endpoint URL (for MinIO, R2, etc.)
     file_storage_s3_access_key_id: str | None  # S3 access key (optional, uses env/IAM)
-    file_storage_s3_secret_access_key: str | None  # S3 secret key (optional, uses env/IAM)
+    file_storage_s3_secret_access_key: (
+        str | None
+    )  # S3 secret key (optional, uses env/IAM)
     file_storage_gcs_bucket: str | None  # GCS bucket name (required for gcs storage)
-    file_storage_gcs_service_account_key: str | None  # GCS service account key JSON (optional, uses ADC)
-    file_storage_azure_container: str | None  # Azure container name (required for azure storage)
+    file_storage_gcs_service_account_key: (
+        str | None
+    )  # GCS service account key JSON (optional, uses ADC)
+    file_storage_azure_container: (
+        str | None
+    )  # Azure container name (required for azure storage)
     file_storage_azure_account_name: str | None  # Azure storage account name
     file_storage_azure_account_key: str | None  # Azure storage account key
-    file_parser: list[str]  # Ordered fallback chain of parsers (e.g. ["iris", "markitdown"])
-    file_parser_allowlist: list[str] | None  # Parsers clients may request (None = all registered)
-    file_parser_iris_token: str | None  # Vectorize API token for iris parser (VECTORIZE_TOKEN)
-    file_parser_iris_org_id: str | None  # Vectorize org ID for iris parser (VECTORIZE_ORG_ID)
-    file_conversion_max_batch_size_mb: int  # Max total batch size in MB (all files combined)
+    file_parser: list[
+        str
+    ]  # Ordered fallback chain of parsers (e.g. ["iris", "markitdown"])
+    file_parser_allowlist: (
+        list[str] | None
+    )  # Parsers clients may request (None = all registered)
+    file_parser_iris_token: (
+        str | None
+    )  # Vectorize API token for iris parser (VECTORIZE_TOKEN)
+    file_parser_iris_org_id: (
+        str | None
+    )  # Vectorize org ID for iris parser (VECTORIZE_ORG_ID)
+    file_conversion_max_batch_size_mb: (
+        int  # Max total batch size in MB (all files combined)
+    )
     file_conversion_max_batch_size: int  # Max files per request
     enable_file_upload_api: bool
     file_delete_after_retain: bool
@@ -801,6 +907,7 @@ class HindsightConfig:
     # Reflect agent settings
     reflect_max_iterations: int
     reflect_max_context_tokens: int
+    reflect_wall_timeout: float
 
     # OpenTelemetry tracing configuration
     otel_traces_enabled: bool
@@ -968,33 +1075,58 @@ class HindsightConfig:
         """Create configuration from environment variables."""
         # Get provider first to determine default model
         llm_provider = os.getenv(ENV_LLM_PROVIDER, DEFAULT_LLM_PROVIDER)
-        llm_model = os.getenv(ENV_LLM_MODEL) or _get_default_model_for_provider(llm_provider)
+        llm_model = os.getenv(ENV_LLM_MODEL) or _get_default_model_for_provider(
+            llm_provider
+        )
 
         config = cls(
             # Database
             database_url=os.getenv(ENV_DATABASE_URL, DEFAULT_DATABASE_URL),
             database_schema=os.getenv(ENV_DATABASE_SCHEMA, DEFAULT_DATABASE_SCHEMA),
-            vector_extension=os.getenv(ENV_VECTOR_EXTENSION, DEFAULT_VECTOR_EXTENSION).lower(),
-            text_search_extension=os.getenv(ENV_TEXT_SEARCH_EXTENSION, DEFAULT_TEXT_SEARCH_EXTENSION).lower(),
+            vector_extension=os.getenv(
+                ENV_VECTOR_EXTENSION, DEFAULT_VECTOR_EXTENSION
+            ).lower(),
+            text_search_extension=os.getenv(
+                ENV_TEXT_SEARCH_EXTENSION, DEFAULT_TEXT_SEARCH_EXTENSION
+            ).lower(),
             # LLM
             llm_provider=llm_provider,
             llm_api_key=os.getenv(ENV_LLM_API_KEY),
             llm_model=llm_model,
             llm_base_url=os.getenv(ENV_LLM_BASE_URL) or None,
-            llm_max_concurrent=int(os.getenv(ENV_LLM_MAX_CONCURRENT, str(DEFAULT_LLM_MAX_CONCURRENT))),
-            llm_max_retries=int(os.getenv(ENV_LLM_MAX_RETRIES, str(DEFAULT_LLM_MAX_RETRIES))),
-            llm_initial_backoff=float(os.getenv(ENV_LLM_INITIAL_BACKOFF, str(DEFAULT_LLM_INITIAL_BACKOFF))),
-            llm_max_backoff=float(os.getenv(ENV_LLM_MAX_BACKOFF, str(DEFAULT_LLM_MAX_BACKOFF))),
+            llm_max_concurrent=int(
+                os.getenv(ENV_LLM_MAX_CONCURRENT, str(DEFAULT_LLM_MAX_CONCURRENT))
+            ),
+            llm_max_retries=int(
+                os.getenv(ENV_LLM_MAX_RETRIES, str(DEFAULT_LLM_MAX_RETRIES))
+            ),
+            llm_initial_backoff=float(
+                os.getenv(ENV_LLM_INITIAL_BACKOFF, str(DEFAULT_LLM_INITIAL_BACKOFF))
+            ),
+            llm_max_backoff=float(
+                os.getenv(ENV_LLM_MAX_BACKOFF, str(DEFAULT_LLM_MAX_BACKOFF))
+            ),
             llm_timeout=float(os.getenv(ENV_LLM_TIMEOUT, str(DEFAULT_LLM_TIMEOUT))),
-            llm_groq_service_tier=os.getenv(ENV_LLM_GROQ_SERVICE_TIER, DEFAULT_LLM_GROQ_SERVICE_TIER),
-            llm_openai_service_tier=os.getenv(ENV_LLM_OPENAI_SERVICE_TIER, DEFAULT_LLM_OPENAI_SERVICE_TIER),
+            llm_groq_service_tier=os.getenv(
+                ENV_LLM_GROQ_SERVICE_TIER, DEFAULT_LLM_GROQ_SERVICE_TIER
+            ),
+            llm_openai_service_tier=os.getenv(
+                ENV_LLM_OPENAI_SERVICE_TIER, DEFAULT_LLM_OPENAI_SERVICE_TIER
+            ),
             # Vertex AI
-            llm_vertexai_project_id=os.getenv(ENV_LLM_VERTEXAI_PROJECT_ID) or DEFAULT_LLM_VERTEXAI_PROJECT_ID,
-            llm_vertexai_region=os.getenv(ENV_LLM_VERTEXAI_REGION, DEFAULT_LLM_VERTEXAI_REGION),
-            llm_vertexai_service_account_key=os.getenv(ENV_LLM_VERTEXAI_SERVICE_ACCOUNT_KEY)
+            llm_vertexai_project_id=os.getenv(ENV_LLM_VERTEXAI_PROJECT_ID)
+            or DEFAULT_LLM_VERTEXAI_PROJECT_ID,
+            llm_vertexai_region=os.getenv(
+                ENV_LLM_VERTEXAI_REGION, DEFAULT_LLM_VERTEXAI_REGION
+            ),
+            llm_vertexai_service_account_key=os.getenv(
+                ENV_LLM_VERTEXAI_SERVICE_ACCOUNT_KEY
+            )
             or DEFAULT_LLM_VERTEXAI_SERVICE_ACCOUNT_KEY,
             # Gemini safety settings (JSON-encoded list of {category, threshold} dicts)
-            llm_gemini_safety_settings=json.loads(os.getenv(ENV_LLM_GEMINI_SAFETY_SETTINGS, "null")),
+            llm_gemini_safety_settings=json.loads(
+                os.getenv(ENV_LLM_GEMINI_SAFETY_SETTINGS, "null")
+            ),
             # Per-operation LLM config (None = use default)
             retain_llm_provider=os.getenv(ENV_RETAIN_LLM_PROVIDER) or None,
             retain_llm_api_key=os.getenv(ENV_RETAIN_LLM_API_KEY) or None,
@@ -1005,19 +1137,31 @@ class HindsightConfig:
                 else None
             ),
             retain_llm_base_url=os.getenv(ENV_RETAIN_LLM_BASE_URL) or None,
-            retain_llm_max_concurrent=int(os.getenv(ENV_RETAIN_LLM_MAX_CONCURRENT))
-            if os.getenv(ENV_RETAIN_LLM_MAX_CONCURRENT)
-            else None,
-            retain_llm_max_retries=int(os.getenv(ENV_RETAIN_LLM_MAX_RETRIES))
-            if os.getenv(ENV_RETAIN_LLM_MAX_RETRIES)
-            else None,
-            retain_llm_initial_backoff=float(os.getenv(ENV_RETAIN_LLM_INITIAL_BACKOFF))
-            if os.getenv(ENV_RETAIN_LLM_INITIAL_BACKOFF)
-            else None,
-            retain_llm_max_backoff=float(os.getenv(ENV_RETAIN_LLM_MAX_BACKOFF))
-            if os.getenv(ENV_RETAIN_LLM_MAX_BACKOFF)
-            else None,
-            retain_llm_timeout=float(os.getenv(ENV_RETAIN_LLM_TIMEOUT)) if os.getenv(ENV_RETAIN_LLM_TIMEOUT) else None,
+            retain_llm_max_concurrent=(
+                int(os.getenv(ENV_RETAIN_LLM_MAX_CONCURRENT))
+                if os.getenv(ENV_RETAIN_LLM_MAX_CONCURRENT)
+                else None
+            ),
+            retain_llm_max_retries=(
+                int(os.getenv(ENV_RETAIN_LLM_MAX_RETRIES))
+                if os.getenv(ENV_RETAIN_LLM_MAX_RETRIES)
+                else None
+            ),
+            retain_llm_initial_backoff=(
+                float(os.getenv(ENV_RETAIN_LLM_INITIAL_BACKOFF))
+                if os.getenv(ENV_RETAIN_LLM_INITIAL_BACKOFF)
+                else None
+            ),
+            retain_llm_max_backoff=(
+                float(os.getenv(ENV_RETAIN_LLM_MAX_BACKOFF))
+                if os.getenv(ENV_RETAIN_LLM_MAX_BACKOFF)
+                else None
+            ),
+            retain_llm_timeout=(
+                float(os.getenv(ENV_RETAIN_LLM_TIMEOUT))
+                if os.getenv(ENV_RETAIN_LLM_TIMEOUT)
+                else None
+            ),
             reflect_llm_provider=os.getenv(ENV_REFLECT_LLM_PROVIDER) or None,
             reflect_llm_api_key=os.getenv(ENV_REFLECT_LLM_API_KEY) or None,
             reflect_llm_model=os.getenv(ENV_REFLECT_LLM_MODEL)
@@ -1027,221 +1171,381 @@ class HindsightConfig:
                 else None
             ),
             reflect_llm_base_url=os.getenv(ENV_REFLECT_LLM_BASE_URL) or None,
-            reflect_llm_max_concurrent=int(os.getenv(ENV_REFLECT_LLM_MAX_CONCURRENT))
-            if os.getenv(ENV_REFLECT_LLM_MAX_CONCURRENT)
-            else None,
-            reflect_llm_max_retries=int(os.getenv(ENV_REFLECT_LLM_MAX_RETRIES))
-            if os.getenv(ENV_REFLECT_LLM_MAX_RETRIES)
-            else None,
-            reflect_llm_initial_backoff=float(os.getenv(ENV_REFLECT_LLM_INITIAL_BACKOFF))
-            if os.getenv(ENV_REFLECT_LLM_INITIAL_BACKOFF)
-            else None,
-            reflect_llm_max_backoff=float(os.getenv(ENV_REFLECT_LLM_MAX_BACKOFF))
-            if os.getenv(ENV_REFLECT_LLM_MAX_BACKOFF)
-            else None,
-            reflect_llm_timeout=float(os.getenv(ENV_REFLECT_LLM_TIMEOUT))
-            if os.getenv(ENV_REFLECT_LLM_TIMEOUT)
-            else None,
-            consolidation_llm_provider=os.getenv(ENV_CONSOLIDATION_LLM_PROVIDER) or None,
+            reflect_llm_max_concurrent=(
+                int(os.getenv(ENV_REFLECT_LLM_MAX_CONCURRENT))
+                if os.getenv(ENV_REFLECT_LLM_MAX_CONCURRENT)
+                else None
+            ),
+            reflect_llm_max_retries=(
+                int(os.getenv(ENV_REFLECT_LLM_MAX_RETRIES))
+                if os.getenv(ENV_REFLECT_LLM_MAX_RETRIES)
+                else None
+            ),
+            reflect_llm_initial_backoff=(
+                float(os.getenv(ENV_REFLECT_LLM_INITIAL_BACKOFF))
+                if os.getenv(ENV_REFLECT_LLM_INITIAL_BACKOFF)
+                else None
+            ),
+            reflect_llm_max_backoff=(
+                float(os.getenv(ENV_REFLECT_LLM_MAX_BACKOFF))
+                if os.getenv(ENV_REFLECT_LLM_MAX_BACKOFF)
+                else None
+            ),
+            reflect_llm_timeout=(
+                float(os.getenv(ENV_REFLECT_LLM_TIMEOUT))
+                if os.getenv(ENV_REFLECT_LLM_TIMEOUT)
+                else None
+            ),
+            consolidation_llm_provider=os.getenv(ENV_CONSOLIDATION_LLM_PROVIDER)
+            or None,
             consolidation_llm_api_key=os.getenv(ENV_CONSOLIDATION_LLM_API_KEY) or None,
             consolidation_llm_model=os.getenv(ENV_CONSOLIDATION_LLM_MODEL)
             or (
-                _get_default_model_for_provider(os.getenv(ENV_CONSOLIDATION_LLM_PROVIDER))
+                _get_default_model_for_provider(
+                    os.getenv(ENV_CONSOLIDATION_LLM_PROVIDER)
+                )
                 if os.getenv(ENV_CONSOLIDATION_LLM_PROVIDER)
                 else None
             ),
-            consolidation_llm_base_url=os.getenv(ENV_CONSOLIDATION_LLM_BASE_URL) or None,
-            consolidation_llm_max_concurrent=int(os.getenv(ENV_CONSOLIDATION_LLM_MAX_CONCURRENT))
-            if os.getenv(ENV_CONSOLIDATION_LLM_MAX_CONCURRENT)
-            else None,
-            consolidation_llm_max_retries=int(os.getenv(ENV_CONSOLIDATION_LLM_MAX_RETRIES))
-            if os.getenv(ENV_CONSOLIDATION_LLM_MAX_RETRIES)
-            else None,
-            consolidation_llm_initial_backoff=float(os.getenv(ENV_CONSOLIDATION_LLM_INITIAL_BACKOFF))
-            if os.getenv(ENV_CONSOLIDATION_LLM_INITIAL_BACKOFF)
-            else None,
-            consolidation_llm_max_backoff=float(os.getenv(ENV_CONSOLIDATION_LLM_MAX_BACKOFF))
-            if os.getenv(ENV_CONSOLIDATION_LLM_MAX_BACKOFF)
-            else None,
-            consolidation_llm_timeout=float(os.getenv(ENV_CONSOLIDATION_LLM_TIMEOUT))
-            if os.getenv(ENV_CONSOLIDATION_LLM_TIMEOUT)
-            else None,
+            consolidation_llm_base_url=os.getenv(ENV_CONSOLIDATION_LLM_BASE_URL)
+            or None,
+            consolidation_llm_max_concurrent=(
+                int(os.getenv(ENV_CONSOLIDATION_LLM_MAX_CONCURRENT))
+                if os.getenv(ENV_CONSOLIDATION_LLM_MAX_CONCURRENT)
+                else None
+            ),
+            consolidation_llm_max_retries=(
+                int(os.getenv(ENV_CONSOLIDATION_LLM_MAX_RETRIES))
+                if os.getenv(ENV_CONSOLIDATION_LLM_MAX_RETRIES)
+                else None
+            ),
+            consolidation_llm_initial_backoff=(
+                float(os.getenv(ENV_CONSOLIDATION_LLM_INITIAL_BACKOFF))
+                if os.getenv(ENV_CONSOLIDATION_LLM_INITIAL_BACKOFF)
+                else None
+            ),
+            consolidation_llm_max_backoff=(
+                float(os.getenv(ENV_CONSOLIDATION_LLM_MAX_BACKOFF))
+                if os.getenv(ENV_CONSOLIDATION_LLM_MAX_BACKOFF)
+                else None
+            ),
+            consolidation_llm_timeout=(
+                float(os.getenv(ENV_CONSOLIDATION_LLM_TIMEOUT))
+                if os.getenv(ENV_CONSOLIDATION_LLM_TIMEOUT)
+                else None
+            ),
             # Embeddings
-            embeddings_provider=os.getenv(ENV_EMBEDDINGS_PROVIDER, DEFAULT_EMBEDDINGS_PROVIDER),
-            embeddings_local_model=os.getenv(ENV_EMBEDDINGS_LOCAL_MODEL, DEFAULT_EMBEDDINGS_LOCAL_MODEL),
+            embeddings_provider=os.getenv(
+                ENV_EMBEDDINGS_PROVIDER, DEFAULT_EMBEDDINGS_PROVIDER
+            ),
+            embeddings_local_model=os.getenv(
+                ENV_EMBEDDINGS_LOCAL_MODEL, DEFAULT_EMBEDDINGS_LOCAL_MODEL
+            ),
             embeddings_local_force_cpu=os.getenv(
                 ENV_EMBEDDINGS_LOCAL_FORCE_CPU, str(DEFAULT_EMBEDDINGS_LOCAL_FORCE_CPU)
             ).lower()
             in ("true", "1"),
             embeddings_local_trust_remote_code=os.getenv(
-                ENV_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE, str(DEFAULT_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE)
+                ENV_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE,
+                str(DEFAULT_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE),
             ).lower()
             in ("true", "1"),
             embeddings_tei_url=os.getenv(ENV_EMBEDDINGS_TEI_URL),
-            embeddings_openai_base_url=os.getenv(ENV_EMBEDDINGS_OPENAI_BASE_URL) or None,
+            embeddings_openai_base_url=os.getenv(ENV_EMBEDDINGS_OPENAI_BASE_URL)
+            or None,
             # Cohere embeddings (with backward-compatible fallback to shared API key)
-            embeddings_cohere_api_key=os.getenv(ENV_EMBEDDINGS_COHERE_API_KEY) or os.getenv(ENV_COHERE_API_KEY),
-            embeddings_cohere_model=os.getenv(ENV_EMBEDDINGS_COHERE_MODEL, DEFAULT_EMBEDDINGS_COHERE_MODEL),
-            embeddings_cohere_base_url=os.getenv(ENV_EMBEDDINGS_COHERE_BASE_URL) or None,
+            embeddings_cohere_api_key=os.getenv(ENV_EMBEDDINGS_COHERE_API_KEY)
+            or os.getenv(ENV_COHERE_API_KEY),
+            embeddings_cohere_model=os.getenv(
+                ENV_EMBEDDINGS_COHERE_MODEL, DEFAULT_EMBEDDINGS_COHERE_MODEL
+            ),
+            embeddings_cohere_base_url=os.getenv(ENV_EMBEDDINGS_COHERE_BASE_URL)
+            or None,
             # LiteLLM embeddings (with backward-compatible fallback to shared config)
             embeddings_litellm_api_base=os.getenv(ENV_EMBEDDINGS_LITELLM_API_BASE)
             or os.getenv(ENV_LITELLM_API_BASE, DEFAULT_LITELLM_API_BASE),
-            embeddings_litellm_api_key=os.getenv(ENV_EMBEDDINGS_LITELLM_API_KEY) or os.getenv(ENV_LITELLM_API_KEY),
-            embeddings_litellm_model=os.getenv(ENV_EMBEDDINGS_LITELLM_MODEL, DEFAULT_EMBEDDINGS_LITELLM_MODEL),
+            embeddings_litellm_api_key=os.getenv(ENV_EMBEDDINGS_LITELLM_API_KEY)
+            or os.getenv(ENV_LITELLM_API_KEY),
+            embeddings_litellm_model=os.getenv(
+                ENV_EMBEDDINGS_LITELLM_MODEL, DEFAULT_EMBEDDINGS_LITELLM_MODEL
+            ),
             # LiteLLM SDK embeddings (direct API access)
-            embeddings_litellm_sdk_api_key=os.getenv(ENV_EMBEDDINGS_LITELLM_SDK_API_KEY),
+            embeddings_litellm_sdk_api_key=os.getenv(
+                ENV_EMBEDDINGS_LITELLM_SDK_API_KEY
+            ),
             embeddings_litellm_sdk_model=os.getenv(
                 ENV_EMBEDDINGS_LITELLM_SDK_MODEL, DEFAULT_EMBEDDINGS_LITELLM_SDK_MODEL
             ),
-            embeddings_litellm_sdk_api_base=os.getenv(ENV_EMBEDDINGS_LITELLM_SDK_API_BASE) or None,
+            embeddings_litellm_sdk_api_base=os.getenv(
+                ENV_EMBEDDINGS_LITELLM_SDK_API_BASE
+            )
+            or None,
             # Reranker
-            reranker_provider=os.getenv(ENV_RERANKER_PROVIDER, DEFAULT_RERANKER_PROVIDER),
-            reranker_local_model=os.getenv(ENV_RERANKER_LOCAL_MODEL, DEFAULT_RERANKER_LOCAL_MODEL),
+            reranker_provider=os.getenv(
+                ENV_RERANKER_PROVIDER, DEFAULT_RERANKER_PROVIDER
+            ),
+            reranker_local_model=os.getenv(
+                ENV_RERANKER_LOCAL_MODEL, DEFAULT_RERANKER_LOCAL_MODEL
+            ),
             reranker_local_force_cpu=os.getenv(
                 ENV_RERANKER_LOCAL_FORCE_CPU, str(DEFAULT_RERANKER_LOCAL_FORCE_CPU)
             ).lower()
             in ("true", "1"),
             reranker_local_max_concurrent=int(
-                os.getenv(ENV_RERANKER_LOCAL_MAX_CONCURRENT, str(DEFAULT_RERANKER_LOCAL_MAX_CONCURRENT))
+                os.getenv(
+                    ENV_RERANKER_LOCAL_MAX_CONCURRENT,
+                    str(DEFAULT_RERANKER_LOCAL_MAX_CONCURRENT),
+                )
             ),
             reranker_local_trust_remote_code=os.getenv(
-                ENV_RERANKER_LOCAL_TRUST_REMOTE_CODE, str(DEFAULT_RERANKER_LOCAL_TRUST_REMOTE_CODE)
+                ENV_RERANKER_LOCAL_TRUST_REMOTE_CODE,
+                str(DEFAULT_RERANKER_LOCAL_TRUST_REMOTE_CODE),
             ).lower()
             in ("true", "1"),
-            reranker_local_fp16=os.getenv(ENV_RERANKER_LOCAL_FP16, str(DEFAULT_RERANKER_LOCAL_FP16)).lower()
+            reranker_local_fp16=os.getenv(
+                ENV_RERANKER_LOCAL_FP16, str(DEFAULT_RERANKER_LOCAL_FP16)
+            ).lower()
             in ("true", "1"),
             reranker_local_bucket_batching=os.getenv(
-                ENV_RERANKER_LOCAL_BUCKET_BATCHING, str(DEFAULT_RERANKER_LOCAL_BUCKET_BATCHING)
+                ENV_RERANKER_LOCAL_BUCKET_BATCHING,
+                str(DEFAULT_RERANKER_LOCAL_BUCKET_BATCHING),
             ).lower()
             in ("true", "1"),
             reranker_local_batch_size=int(
-                os.getenv(ENV_RERANKER_LOCAL_BATCH_SIZE, str(DEFAULT_RERANKER_LOCAL_BATCH_SIZE))
+                os.getenv(
+                    ENV_RERANKER_LOCAL_BATCH_SIZE,
+                    str(DEFAULT_RERANKER_LOCAL_BATCH_SIZE),
+                )
             ),
             reranker_tei_url=os.getenv(ENV_RERANKER_TEI_URL),
-            reranker_tei_batch_size=int(os.getenv(ENV_RERANKER_TEI_BATCH_SIZE, str(DEFAULT_RERANKER_TEI_BATCH_SIZE))),
-            reranker_tei_max_concurrent=int(
-                os.getenv(ENV_RERANKER_TEI_MAX_CONCURRENT, str(DEFAULT_RERANKER_TEI_MAX_CONCURRENT))
+            reranker_tei_batch_size=int(
+                os.getenv(
+                    ENV_RERANKER_TEI_BATCH_SIZE, str(DEFAULT_RERANKER_TEI_BATCH_SIZE)
+                )
             ),
-            reranker_max_candidates=int(os.getenv(ENV_RERANKER_MAX_CANDIDATES, str(DEFAULT_RERANKER_MAX_CANDIDATES))),
+            reranker_tei_max_concurrent=int(
+                os.getenv(
+                    ENV_RERANKER_TEI_MAX_CONCURRENT,
+                    str(DEFAULT_RERANKER_TEI_MAX_CONCURRENT),
+                )
+            ),
+            reranker_max_candidates=int(
+                os.getenv(
+                    ENV_RERANKER_MAX_CANDIDATES, str(DEFAULT_RERANKER_MAX_CANDIDATES)
+                )
+            ),
             # Cohere reranker (with backward-compatible fallback to shared API key)
-            reranker_cohere_api_key=os.getenv(ENV_RERANKER_COHERE_API_KEY) or os.getenv(ENV_COHERE_API_KEY),
-            reranker_cohere_model=os.getenv(ENV_RERANKER_COHERE_MODEL, DEFAULT_RERANKER_COHERE_MODEL),
+            reranker_cohere_api_key=os.getenv(ENV_RERANKER_COHERE_API_KEY)
+            or os.getenv(ENV_COHERE_API_KEY),
+            reranker_cohere_model=os.getenv(
+                ENV_RERANKER_COHERE_MODEL, DEFAULT_RERANKER_COHERE_MODEL
+            ),
             reranker_cohere_base_url=os.getenv(ENV_RERANKER_COHERE_BASE_URL) or None,
             # LiteLLM reranker (with backward-compatible fallback to shared config)
             reranker_litellm_api_base=os.getenv(ENV_RERANKER_LITELLM_API_BASE)
             or os.getenv(ENV_LITELLM_API_BASE, DEFAULT_LITELLM_API_BASE),
-            reranker_litellm_api_key=os.getenv(ENV_RERANKER_LITELLM_API_KEY) or os.getenv(ENV_LITELLM_API_KEY),
-            reranker_litellm_model=os.getenv(ENV_RERANKER_LITELLM_MODEL, DEFAULT_RERANKER_LITELLM_MODEL),
-            reranker_litellm_max_tokens_per_doc=int(v)
-            if (v := os.getenv(ENV_RERANKER_LITELLM_MAX_TOKENS_PER_DOC))
-            else DEFAULT_RERANKER_LITELLM_MAX_TOKENS_PER_DOC,
+            reranker_litellm_api_key=os.getenv(ENV_RERANKER_LITELLM_API_KEY)
+            or os.getenv(ENV_LITELLM_API_KEY),
+            reranker_litellm_model=os.getenv(
+                ENV_RERANKER_LITELLM_MODEL, DEFAULT_RERANKER_LITELLM_MODEL
+            ),
+            reranker_litellm_max_tokens_per_doc=(
+                int(v)
+                if (v := os.getenv(ENV_RERANKER_LITELLM_MAX_TOKENS_PER_DOC))
+                else DEFAULT_RERANKER_LITELLM_MAX_TOKENS_PER_DOC
+            ),
             # LiteLLM SDK reranker (direct API access)
             reranker_litellm_sdk_api_key=os.getenv(ENV_RERANKER_LITELLM_SDK_API_KEY),
-            reranker_litellm_sdk_model=os.getenv(ENV_RERANKER_LITELLM_SDK_MODEL, DEFAULT_RERANKER_LITELLM_SDK_MODEL),
-            reranker_litellm_sdk_api_base=os.getenv(ENV_RERANKER_LITELLM_SDK_API_BASE) or None,
+            reranker_litellm_sdk_model=os.getenv(
+                ENV_RERANKER_LITELLM_SDK_MODEL, DEFAULT_RERANKER_LITELLM_SDK_MODEL
+            ),
+            reranker_litellm_sdk_api_base=os.getenv(ENV_RERANKER_LITELLM_SDK_API_BASE)
+            or None,
             # ZeroEntropy reranker
             reranker_zeroentropy_api_key=os.getenv(ENV_RERANKER_ZEROENTROPY_API_KEY),
-            reranker_zeroentropy_model=os.getenv(ENV_RERANKER_ZEROENTROPY_MODEL, DEFAULT_RERANKER_ZEROENTROPY_MODEL),
+            reranker_zeroentropy_model=os.getenv(
+                ENV_RERANKER_ZEROENTROPY_MODEL, DEFAULT_RERANKER_ZEROENTROPY_MODEL
+            ),
             # Server
             host=os.getenv(ENV_HOST, DEFAULT_HOST),
             port=int(os.getenv(ENV_PORT, DEFAULT_PORT)),
             base_path=os.getenv(ENV_BASE_PATH, DEFAULT_BASE_PATH),
             log_level=os.getenv(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL),
             log_format=os.getenv(ENV_LOG_FORMAT, DEFAULT_LOG_FORMAT).lower(),
-            mcp_enabled=os.getenv(ENV_MCP_ENABLED, str(DEFAULT_MCP_ENABLED)).lower() == "true",
-            mcp_enabled_tools=[t.strip() for t in os.getenv(ENV_MCP_ENABLED_TOOLS).split(",") if t.strip()]
-            if os.getenv(ENV_MCP_ENABLED_TOOLS)
-            else DEFAULT_MCP_ENABLED_TOOLS,
-            enable_bank_config_api=os.getenv(ENV_ENABLE_BANK_CONFIG_API, str(DEFAULT_ENABLE_BANK_CONFIG_API)).lower()
+            mcp_enabled=os.getenv(ENV_MCP_ENABLED, str(DEFAULT_MCP_ENABLED)).lower()
+            == "true",
+            mcp_enabled_tools=(
+                [
+                    t.strip()
+                    for t in os.getenv(ENV_MCP_ENABLED_TOOLS).split(",")
+                    if t.strip()
+                ]
+                if os.getenv(ENV_MCP_ENABLED_TOOLS)
+                else DEFAULT_MCP_ENABLED_TOOLS
+            ),
+            enable_bank_config_api=os.getenv(
+                ENV_ENABLE_BANK_CONFIG_API, str(DEFAULT_ENABLE_BANK_CONFIG_API)
+            ).lower()
             == "true",
             # Recall
             graph_retriever=os.getenv(ENV_GRAPH_RETRIEVER, DEFAULT_GRAPH_RETRIEVER),
-            mpfp_top_k_neighbors=int(os.getenv(ENV_MPFP_TOP_K_NEIGHBORS, str(DEFAULT_MPFP_TOP_K_NEIGHBORS))),
-            recall_max_concurrent=int(os.getenv(ENV_RECALL_MAX_CONCURRENT, str(DEFAULT_RECALL_MAX_CONCURRENT))),
-            recall_connection_budget=int(
-                os.getenv(ENV_RECALL_CONNECTION_BUDGET, str(DEFAULT_RECALL_CONNECTION_BUDGET))
+            mpfp_top_k_neighbors=int(
+                os.getenv(ENV_MPFP_TOP_K_NEIGHBORS, str(DEFAULT_MPFP_TOP_K_NEIGHBORS))
             ),
-            recall_max_query_tokens=int(os.getenv(ENV_RECALL_MAX_QUERY_TOKENS, str(DEFAULT_RECALL_MAX_QUERY_TOKENS))),
+            recall_max_concurrent=int(
+                os.getenv(ENV_RECALL_MAX_CONCURRENT, str(DEFAULT_RECALL_MAX_CONCURRENT))
+            ),
+            recall_connection_budget=int(
+                os.getenv(
+                    ENV_RECALL_CONNECTION_BUDGET, str(DEFAULT_RECALL_CONNECTION_BUDGET)
+                )
+            ),
+            recall_max_query_tokens=int(
+                os.getenv(
+                    ENV_RECALL_MAX_QUERY_TOKENS, str(DEFAULT_RECALL_MAX_QUERY_TOKENS)
+                )
+            ),
             mental_model_refresh_concurrency=int(
-                os.getenv(ENV_MENTAL_MODEL_REFRESH_CONCURRENCY, str(DEFAULT_MENTAL_MODEL_REFRESH_CONCURRENCY))
+                os.getenv(
+                    ENV_MENTAL_MODEL_REFRESH_CONCURRENCY,
+                    str(DEFAULT_MENTAL_MODEL_REFRESH_CONCURRENCY),
+                )
             ),
             # Optimization flags
-            skip_llm_verification=os.getenv(ENV_SKIP_LLM_VERIFICATION, "false").lower() == "true",
+            skip_llm_verification=os.getenv(ENV_SKIP_LLM_VERIFICATION, "false").lower()
+            == "true",
             lazy_reranker=os.getenv(ENV_LAZY_RERANKER, "false").lower() == "true",
             # Retain settings
             retain_max_completion_tokens=int(
-                os.getenv(ENV_RETAIN_MAX_COMPLETION_TOKENS, str(DEFAULT_RETAIN_MAX_COMPLETION_TOKENS))
+                os.getenv(
+                    ENV_RETAIN_MAX_COMPLETION_TOKENS,
+                    str(DEFAULT_RETAIN_MAX_COMPLETION_TOKENS),
+                )
             ),
-            retain_chunk_size=int(os.getenv(ENV_RETAIN_CHUNK_SIZE, str(DEFAULT_RETAIN_CHUNK_SIZE))),
+            retain_chunk_size=int(
+                os.getenv(ENV_RETAIN_CHUNK_SIZE, str(DEFAULT_RETAIN_CHUNK_SIZE))
+            ),
             retain_extract_causal_links=os.getenv(
-                ENV_RETAIN_EXTRACT_CAUSAL_LINKS, str(DEFAULT_RETAIN_EXTRACT_CAUSAL_LINKS)
+                ENV_RETAIN_EXTRACT_CAUSAL_LINKS,
+                str(DEFAULT_RETAIN_EXTRACT_CAUSAL_LINKS),
             ).lower()
             == "true",
             retain_extraction_mode=_validate_extraction_mode(
                 os.getenv(ENV_RETAIN_EXTRACTION_MODE, DEFAULT_RETAIN_EXTRACTION_MODE)
             ),
             retain_mission=os.getenv(ENV_RETAIN_MISSION) or DEFAULT_RETAIN_MISSION,
-            retain_custom_instructions=os.getenv(ENV_RETAIN_CUSTOM_INSTRUCTIONS) or DEFAULT_RETAIN_CUSTOM_INSTRUCTIONS,
-            retain_default_strategy=os.getenv(ENV_RETAIN_DEFAULT_STRATEGY) or DEFAULT_RETAIN_DEFAULT_STRATEGY,
+            retain_custom_instructions=os.getenv(ENV_RETAIN_CUSTOM_INSTRUCTIONS)
+            or DEFAULT_RETAIN_CUSTOM_INSTRUCTIONS,
+            retain_default_strategy=os.getenv(ENV_RETAIN_DEFAULT_STRATEGY)
+            or DEFAULT_RETAIN_DEFAULT_STRATEGY,
             retain_strategies=DEFAULT_RETAIN_STRATEGIES,
-            retain_batch_tokens=int(os.getenv(ENV_RETAIN_BATCH_TOKENS, str(DEFAULT_RETAIN_BATCH_TOKENS))),
-            retain_entity_lookup=os.getenv(ENV_RETAIN_ENTITY_LOOKUP, DEFAULT_RETAIN_ENTITY_LOOKUP),
-            retain_batch_enabled=os.getenv(ENV_RETAIN_BATCH_ENABLED, str(DEFAULT_RETAIN_BATCH_ENABLED)).lower()
+            retain_batch_tokens=int(
+                os.getenv(ENV_RETAIN_BATCH_TOKENS, str(DEFAULT_RETAIN_BATCH_TOKENS))
+            ),
+            retain_entity_lookup=os.getenv(
+                ENV_RETAIN_ENTITY_LOOKUP, DEFAULT_RETAIN_ENTITY_LOOKUP
+            ),
+            retain_batch_enabled=os.getenv(
+                ENV_RETAIN_BATCH_ENABLED, str(DEFAULT_RETAIN_BATCH_ENABLED)
+            ).lower()
             == "true",
             retain_batch_poll_interval_seconds=int(
-                os.getenv(ENV_RETAIN_BATCH_POLL_INTERVAL_SECONDS, str(DEFAULT_RETAIN_BATCH_POLL_INTERVAL_SECONDS))
+                os.getenv(
+                    ENV_RETAIN_BATCH_POLL_INTERVAL_SECONDS,
+                    str(DEFAULT_RETAIN_BATCH_POLL_INTERVAL_SECONDS),
+                )
             ),
             # File storage
-            file_storage_type=os.getenv(ENV_FILE_STORAGE_TYPE, DEFAULT_FILE_STORAGE_TYPE),
+            file_storage_type=os.getenv(
+                ENV_FILE_STORAGE_TYPE, DEFAULT_FILE_STORAGE_TYPE
+            ),
             file_storage_s3_bucket=os.getenv(ENV_FILE_STORAGE_S3_BUCKET) or None,
             file_storage_s3_region=os.getenv(ENV_FILE_STORAGE_S3_REGION) or None,
             file_storage_s3_endpoint=os.getenv(ENV_FILE_STORAGE_S3_ENDPOINT) or None,
-            file_storage_s3_access_key_id=os.getenv(ENV_FILE_STORAGE_S3_ACCESS_KEY_ID) or None,
-            file_storage_s3_secret_access_key=os.getenv(ENV_FILE_STORAGE_S3_SECRET_ACCESS_KEY) or None,
+            file_storage_s3_access_key_id=os.getenv(ENV_FILE_STORAGE_S3_ACCESS_KEY_ID)
+            or None,
+            file_storage_s3_secret_access_key=os.getenv(
+                ENV_FILE_STORAGE_S3_SECRET_ACCESS_KEY
+            )
+            or None,
             file_storage_gcs_bucket=os.getenv(ENV_FILE_STORAGE_GCS_BUCKET) or None,
-            file_storage_gcs_service_account_key=os.getenv(ENV_FILE_STORAGE_GCS_SERVICE_ACCOUNT_KEY) or None,
-            file_storage_azure_container=os.getenv(ENV_FILE_STORAGE_AZURE_CONTAINER) or None,
-            file_storage_azure_account_name=os.getenv(ENV_FILE_STORAGE_AZURE_ACCOUNT_NAME) or None,
-            file_storage_azure_account_key=os.getenv(ENV_FILE_STORAGE_AZURE_ACCOUNT_KEY) or None,
-            file_parser=_parse_str_list(os.getenv(ENV_FILE_PARSER, DEFAULT_FILE_PARSER)),
-            file_parser_allowlist=_parse_str_list(os.getenv(ENV_FILE_PARSER_ALLOWLIST))
-            if os.getenv(ENV_FILE_PARSER_ALLOWLIST)
-            else None,
+            file_storage_gcs_service_account_key=os.getenv(
+                ENV_FILE_STORAGE_GCS_SERVICE_ACCOUNT_KEY
+            )
+            or None,
+            file_storage_azure_container=os.getenv(ENV_FILE_STORAGE_AZURE_CONTAINER)
+            or None,
+            file_storage_azure_account_name=os.getenv(
+                ENV_FILE_STORAGE_AZURE_ACCOUNT_NAME
+            )
+            or None,
+            file_storage_azure_account_key=os.getenv(ENV_FILE_STORAGE_AZURE_ACCOUNT_KEY)
+            or None,
+            file_parser=_parse_str_list(
+                os.getenv(ENV_FILE_PARSER, DEFAULT_FILE_PARSER)
+            ),
+            file_parser_allowlist=(
+                _parse_str_list(os.getenv(ENV_FILE_PARSER_ALLOWLIST))
+                if os.getenv(ENV_FILE_PARSER_ALLOWLIST)
+                else None
+            ),
             file_parser_iris_token=os.getenv(ENV_FILE_PARSER_IRIS_TOKEN) or None,
             file_parser_iris_org_id=os.getenv(ENV_FILE_PARSER_IRIS_ORG_ID) or None,
             file_conversion_max_batch_size_mb=int(
-                os.getenv(ENV_FILE_CONVERSION_MAX_BATCH_SIZE_MB, str(DEFAULT_FILE_CONVERSION_MAX_BATCH_SIZE_MB))
+                os.getenv(
+                    ENV_FILE_CONVERSION_MAX_BATCH_SIZE_MB,
+                    str(DEFAULT_FILE_CONVERSION_MAX_BATCH_SIZE_MB),
+                )
             ),
             file_conversion_max_batch_size=int(
-                os.getenv(ENV_FILE_CONVERSION_MAX_BATCH_SIZE, str(DEFAULT_FILE_CONVERSION_MAX_BATCH_SIZE))
+                os.getenv(
+                    ENV_FILE_CONVERSION_MAX_BATCH_SIZE,
+                    str(DEFAULT_FILE_CONVERSION_MAX_BATCH_SIZE),
+                )
             ),
-            enable_file_upload_api=os.getenv(ENV_ENABLE_FILE_UPLOAD_API, str(DEFAULT_ENABLE_FILE_UPLOAD_API)).lower()
+            enable_file_upload_api=os.getenv(
+                ENV_ENABLE_FILE_UPLOAD_API, str(DEFAULT_ENABLE_FILE_UPLOAD_API)
+            ).lower()
             == "true",
             file_delete_after_retain=os.getenv(
                 ENV_FILE_DELETE_AFTER_RETAIN, str(DEFAULT_FILE_DELETE_AFTER_RETAIN)
             ).lower()
             == "true",
             # Observations settings (consolidated knowledge from facts)
-            enable_observations=os.getenv(ENV_ENABLE_OBSERVATIONS, str(DEFAULT_ENABLE_OBSERVATIONS)).lower() == "true",
+            enable_observations=os.getenv(
+                ENV_ENABLE_OBSERVATIONS, str(DEFAULT_ENABLE_OBSERVATIONS)
+            ).lower()
+            == "true",
             enable_observation_history=os.getenv(
                 ENV_ENABLE_OBSERVATION_HISTORY, str(DEFAULT_ENABLE_OBSERVATION_HISTORY)
             ).lower()
             == "true",
             enable_mental_model_history=os.getenv(
-                ENV_ENABLE_MENTAL_MODEL_HISTORY, str(DEFAULT_ENABLE_MENTAL_MODEL_HISTORY)
+                ENV_ENABLE_MENTAL_MODEL_HISTORY,
+                str(DEFAULT_ENABLE_MENTAL_MODEL_HISTORY),
             ).lower()
             == "true",
             consolidation_batch_size=int(
-                os.getenv(ENV_CONSOLIDATION_BATCH_SIZE, str(DEFAULT_CONSOLIDATION_BATCH_SIZE))
+                os.getenv(
+                    ENV_CONSOLIDATION_BATCH_SIZE, str(DEFAULT_CONSOLIDATION_BATCH_SIZE)
+                )
             ),
             consolidation_llm_batch_size=int(
-                os.getenv(ENV_CONSOLIDATION_LLM_BATCH_SIZE, str(DEFAULT_CONSOLIDATION_LLM_BATCH_SIZE))
+                os.getenv(
+                    ENV_CONSOLIDATION_LLM_BATCH_SIZE,
+                    str(DEFAULT_CONSOLIDATION_LLM_BATCH_SIZE),
+                )
             ),
             consolidation_max_tokens=int(
-                os.getenv(ENV_CONSOLIDATION_MAX_TOKENS, str(DEFAULT_CONSOLIDATION_MAX_TOKENS))
+                os.getenv(
+                    ENV_CONSOLIDATION_MAX_TOKENS, str(DEFAULT_CONSOLIDATION_MAX_TOKENS)
+                )
             ),
             consolidation_source_facts_max_tokens=int(
-                os.getenv(ENV_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS, str(DEFAULT_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS))
+                os.getenv(
+                    ENV_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS,
+                    str(DEFAULT_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS),
+                )
             ),
             consolidation_source_facts_max_tokens_per_observation=int(
                 os.getenv(
@@ -1249,55 +1553,109 @@ class HindsightConfig:
                     str(DEFAULT_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS_PER_OBSERVATION),
                 )
             ),
-            observations_mission=os.getenv(ENV_OBSERVATIONS_MISSION) or DEFAULT_OBSERVATIONS_MISSION,
+            observations_mission=os.getenv(ENV_OBSERVATIONS_MISSION)
+            or DEFAULT_OBSERVATIONS_MISSION,
             entity_labels=None,
             entities_allow_free_form=True,
             # Database migrations
-            run_migrations_on_startup=os.getenv(ENV_RUN_MIGRATIONS_ON_STARTUP, "true").lower() == "true",
+            run_migrations_on_startup=os.getenv(
+                ENV_RUN_MIGRATIONS_ON_STARTUP, "true"
+            ).lower()
+            == "true",
             # Database connection pool
-            db_pool_min_size=int(os.getenv(ENV_DB_POOL_MIN_SIZE, str(DEFAULT_DB_POOL_MIN_SIZE))),
-            db_pool_max_size=int(os.getenv(ENV_DB_POOL_MAX_SIZE, str(DEFAULT_DB_POOL_MAX_SIZE))),
-            db_command_timeout=int(os.getenv(ENV_DB_COMMAND_TIMEOUT, str(DEFAULT_DB_COMMAND_TIMEOUT))),
-            db_acquire_timeout=int(os.getenv(ENV_DB_ACQUIRE_TIMEOUT, str(DEFAULT_DB_ACQUIRE_TIMEOUT))),
+            db_pool_min_size=int(
+                os.getenv(ENV_DB_POOL_MIN_SIZE, str(DEFAULT_DB_POOL_MIN_SIZE))
+            ),
+            db_pool_max_size=int(
+                os.getenv(ENV_DB_POOL_MAX_SIZE, str(DEFAULT_DB_POOL_MAX_SIZE))
+            ),
+            db_command_timeout=int(
+                os.getenv(ENV_DB_COMMAND_TIMEOUT, str(DEFAULT_DB_COMMAND_TIMEOUT))
+            ),
+            db_acquire_timeout=int(
+                os.getenv(ENV_DB_ACQUIRE_TIMEOUT, str(DEFAULT_DB_ACQUIRE_TIMEOUT))
+            ),
             # Worker configuration
-            worker_enabled=os.getenv(ENV_WORKER_ENABLED, str(DEFAULT_WORKER_ENABLED)).lower() == "true",
+            worker_enabled=os.getenv(
+                ENV_WORKER_ENABLED, str(DEFAULT_WORKER_ENABLED)
+            ).lower()
+            == "true",
             worker_id=os.getenv(ENV_WORKER_ID) or DEFAULT_WORKER_ID,
-            worker_poll_interval_ms=int(os.getenv(ENV_WORKER_POLL_INTERVAL_MS, str(DEFAULT_WORKER_POLL_INTERVAL_MS))),
-            worker_max_retries=int(os.getenv(ENV_WORKER_MAX_RETRIES, str(DEFAULT_WORKER_MAX_RETRIES))),
-            worker_http_port=int(os.getenv(ENV_WORKER_HTTP_PORT, str(DEFAULT_WORKER_HTTP_PORT))),
-            worker_max_slots=int(os.getenv(ENV_WORKER_MAX_SLOTS, str(DEFAULT_WORKER_MAX_SLOTS))),
+            worker_poll_interval_ms=int(
+                os.getenv(
+                    ENV_WORKER_POLL_INTERVAL_MS, str(DEFAULT_WORKER_POLL_INTERVAL_MS)
+                )
+            ),
+            worker_max_retries=int(
+                os.getenv(ENV_WORKER_MAX_RETRIES, str(DEFAULT_WORKER_MAX_RETRIES))
+            ),
+            worker_http_port=int(
+                os.getenv(ENV_WORKER_HTTP_PORT, str(DEFAULT_WORKER_HTTP_PORT))
+            ),
+            worker_max_slots=int(
+                os.getenv(ENV_WORKER_MAX_SLOTS, str(DEFAULT_WORKER_MAX_SLOTS))
+            ),
             worker_consolidation_max_slots=int(
-                os.getenv(ENV_WORKER_CONSOLIDATION_MAX_SLOTS, str(DEFAULT_WORKER_CONSOLIDATION_MAX_SLOTS))
+                os.getenv(
+                    ENV_WORKER_CONSOLIDATION_MAX_SLOTS,
+                    str(DEFAULT_WORKER_CONSOLIDATION_MAX_SLOTS),
+                )
             ),
             # Reflect agent settings
-            reflect_max_iterations=int(os.getenv(ENV_REFLECT_MAX_ITERATIONS, str(DEFAULT_REFLECT_MAX_ITERATIONS))),
+            reflect_max_iterations=int(
+                os.getenv(
+                    ENV_REFLECT_MAX_ITERATIONS, str(DEFAULT_REFLECT_MAX_ITERATIONS)
+                )
+            ),
             reflect_max_context_tokens=int(
-                os.getenv(ENV_REFLECT_MAX_CONTEXT_TOKENS, str(DEFAULT_REFLECT_MAX_CONTEXT_TOKENS))
+                os.getenv(
+                    ENV_REFLECT_MAX_CONTEXT_TOKENS,
+                    str(DEFAULT_REFLECT_MAX_CONTEXT_TOKENS),
+                )
+            ),
+            reflect_wall_timeout=float(
+                os.getenv(ENV_REFLECT_WALL_TIMEOUT, str(DEFAULT_REFLECT_WALL_TIMEOUT))
             ),
             reflect_mission=os.getenv(ENV_REFLECT_MISSION) or None,
             # Disposition settings (None = fall back to DB value)
-            disposition_skepticism=int(os.getenv(ENV_DISPOSITION_SKEPTICISM))
-            if os.getenv(ENV_DISPOSITION_SKEPTICISM)
-            else DEFAULT_DISPOSITION_SKEPTICISM,
-            disposition_literalism=int(os.getenv(ENV_DISPOSITION_LITERALISM))
-            if os.getenv(ENV_DISPOSITION_LITERALISM)
-            else DEFAULT_DISPOSITION_LITERALISM,
-            disposition_empathy=int(os.getenv(ENV_DISPOSITION_EMPATHY))
-            if os.getenv(ENV_DISPOSITION_EMPATHY)
-            else DEFAULT_DISPOSITION_EMPATHY,
+            disposition_skepticism=(
+                int(os.getenv(ENV_DISPOSITION_SKEPTICISM))
+                if os.getenv(ENV_DISPOSITION_SKEPTICISM)
+                else DEFAULT_DISPOSITION_SKEPTICISM
+            ),
+            disposition_literalism=(
+                int(os.getenv(ENV_DISPOSITION_LITERALISM))
+                if os.getenv(ENV_DISPOSITION_LITERALISM)
+                else DEFAULT_DISPOSITION_LITERALISM
+            ),
+            disposition_empathy=(
+                int(os.getenv(ENV_DISPOSITION_EMPATHY))
+                if os.getenv(ENV_DISPOSITION_EMPATHY)
+                else DEFAULT_DISPOSITION_EMPATHY
+            ),
             # OpenTelemetry tracing configuration
-            otel_traces_enabled=os.getenv(ENV_OTEL_TRACES_ENABLED, str(DEFAULT_OTEL_TRACES_ENABLED)).lower()
+            otel_traces_enabled=os.getenv(
+                ENV_OTEL_TRACES_ENABLED, str(DEFAULT_OTEL_TRACES_ENABLED)
+            ).lower()
             in ("true", "1", "yes"),
-            otel_exporter_otlp_endpoint=os.getenv(ENV_OTEL_EXPORTER_OTLP_ENDPOINT) or None,
-            otel_exporter_otlp_headers=os.getenv(ENV_OTEL_EXPORTER_OTLP_HEADERS) or None,
-            otel_service_name=os.getenv(ENV_OTEL_SERVICE_NAME, DEFAULT_OTEL_SERVICE_NAME),
-            otel_deployment_environment=os.getenv(ENV_OTEL_DEPLOYMENT_ENVIRONMENT, DEFAULT_OTEL_DEPLOYMENT_ENVIRONMENT),
+            otel_exporter_otlp_endpoint=os.getenv(ENV_OTEL_EXPORTER_OTLP_ENDPOINT)
+            or None,
+            otel_exporter_otlp_headers=os.getenv(ENV_OTEL_EXPORTER_OTLP_HEADERS)
+            or None,
+            otel_service_name=os.getenv(
+                ENV_OTEL_SERVICE_NAME, DEFAULT_OTEL_SERVICE_NAME
+            ),
+            otel_deployment_environment=os.getenv(
+                ENV_OTEL_DEPLOYMENT_ENVIRONMENT, DEFAULT_OTEL_DEPLOYMENT_ENVIRONMENT
+            ),
             # Webhook configuration (static, server-level only)
             webhook_url=os.getenv(ENV_WEBHOOK_URL) or DEFAULT_WEBHOOK_URL,
             webhook_secret=os.getenv(ENV_WEBHOOK_SECRET) or DEFAULT_WEBHOOK_SECRET,
             webhook_event_types=[
                 t.strip()
-                for t in os.getenv(ENV_WEBHOOK_EVENT_TYPES, DEFAULT_WEBHOOK_EVENT_TYPES).split(",")
+                for t in os.getenv(
+                    ENV_WEBHOOK_EVENT_TYPES, DEFAULT_WEBHOOK_EVENT_TYPES
+                ).split(",")
                 if t.strip()
             ],
             webhook_delivery_poll_interval_seconds=int(
@@ -1357,7 +1715,11 @@ class HindsightConfig:
         if self.log_format == "json":
             handler.setFormatter(JsonFormatter())
         else:
-            handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s"))
+            handler.setFormatter(
+                logging.Formatter(
+                    "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+                )
+            )
 
         root_logger.addHandler(handler)
 
@@ -1368,15 +1730,23 @@ class HindsightConfig:
         if self.retain_llm_provider or self.retain_llm_model:
             retain_provider = self.retain_llm_provider or self.llm_provider
             retain_model = self.retain_llm_model or self.llm_model
-            logger.info(f"LLM (retain): provider={retain_provider}, model={retain_model}")
+            logger.info(
+                f"LLM (retain): provider={retain_provider}, model={retain_model}"
+            )
         if self.reflect_llm_provider or self.reflect_llm_model:
             reflect_provider = self.reflect_llm_provider or self.llm_provider
             reflect_model = self.reflect_llm_model or self.llm_model
-            logger.info(f"LLM (reflect): provider={reflect_provider}, model={reflect_model}")
+            logger.info(
+                f"LLM (reflect): provider={reflect_provider}, model={reflect_model}"
+            )
         if self.consolidation_llm_provider or self.consolidation_llm_model:
-            consolidation_provider = self.consolidation_llm_provider or self.llm_provider
+            consolidation_provider = (
+                self.consolidation_llm_provider or self.llm_provider
+            )
             consolidation_model = self.consolidation_llm_model or self.llm_model
-            logger.info(f"LLM (consolidation): provider={consolidation_provider}, model={consolidation_model}")
+            logger.info(
+                f"LLM (consolidation): provider={consolidation_provider}, model={consolidation_model}"
+            )
         logger.info(f"Embeddings: provider={self.embeddings_provider}")
         logger.info(f"Reranker: provider={self.reranker_provider}")
         logger.info(f"Graph retriever: {self.graph_retriever}")
