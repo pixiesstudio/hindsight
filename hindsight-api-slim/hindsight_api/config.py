@@ -179,6 +179,7 @@ ENV_EMBEDDINGS_LOCAL_FORCE_CPU = "HINDSIGHT_API_EMBEDDINGS_LOCAL_FORCE_CPU"
 ENV_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE = (
     "HINDSIGHT_API_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE"
 )
+ENV_EMBEDDINGS_LOCAL_DEFAULT_TASK = "HINDSIGHT_API_EMBEDDINGS_LOCAL_DEFAULT_TASK"
 ENV_EMBEDDINGS_TEI_URL = "HINDSIGHT_API_EMBEDDINGS_TEI_URL"
 ENV_EMBEDDINGS_OPENAI_API_KEY = "HINDSIGHT_API_EMBEDDINGS_OPENAI_API_KEY"
 ENV_EMBEDDINGS_OPENAI_MODEL = "HINDSIGHT_API_EMBEDDINGS_OPENAI_MODEL"
@@ -413,6 +414,9 @@ DEFAULT_EMBEDDINGS_LOCAL_FORCE_CPU = (
 )
 DEFAULT_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE = (
     False  # Security: disabled by default, required for some models
+)
+DEFAULT_EMBEDDINGS_LOCAL_DEFAULT_TASK: str | None = (
+    None  # Task for models that require it (e.g., 'retrieval' for Jina v5)
 )
 DEFAULT_EMBEDDINGS_OPENAI_MODEL = "text-embedding-3-small"
 DEFAULT_EMBEDDING_DIMENSION = 384
@@ -749,6 +753,7 @@ class HindsightConfig:
     embeddings_local_model: str
     embeddings_local_force_cpu: bool
     embeddings_local_trust_remote_code: bool
+    embeddings_local_default_task: str | None
     embeddings_tei_url: str | None
     embeddings_openai_base_url: str | None
     embeddings_cohere_api_key: str | None
@@ -1250,6 +1255,8 @@ class HindsightConfig:
                 str(DEFAULT_EMBEDDINGS_LOCAL_TRUST_REMOTE_CODE),
             ).lower()
             in ("true", "1"),
+            embeddings_local_default_task=os.getenv(ENV_EMBEDDINGS_LOCAL_DEFAULT_TASK)
+            or DEFAULT_EMBEDDINGS_LOCAL_DEFAULT_TASK,
             embeddings_tei_url=os.getenv(ENV_EMBEDDINGS_TEI_URL),
             embeddings_openai_base_url=os.getenv(ENV_EMBEDDINGS_OPENAI_BASE_URL)
             or None,

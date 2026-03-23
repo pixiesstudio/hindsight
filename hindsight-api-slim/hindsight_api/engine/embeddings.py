@@ -94,7 +94,13 @@ class LocalSTEmbeddings(Embeddings):
     The embedding dimension is auto-detected from the model.
     """
 
-    def __init__(self, model_name: str | None = None, force_cpu: bool = False, trust_remote_code: bool = False):
+    def __init__(
+        self,
+        model_name: str | None = None,
+        force_cpu: bool = False,
+        trust_remote_code: bool = False,
+        default_task: str | None = None,
+    ):
         """
         Initialize local SentenceTransformers embeddings.
 
@@ -106,10 +112,13 @@ class LocalSTEmbeddings(Embeddings):
             trust_remote_code: Allow loading models with custom code (security risk).
                               Required for some models with custom architectures.
                               Default: False (disabled for security)
+            default_task: Default task for models that require task specification
+                         (e.g., 'retrieval' for Jina v5). Default: None
         """
         self.model_name = model_name or DEFAULT_EMBEDDINGS_LOCAL_MODEL
         self.force_cpu = force_cpu
         self.trust_remote_code = trust_remote_code
+        self.default_task = default_task
         self._model = None
         self._dimension: int | None = None
 
@@ -136,7 +145,9 @@ class LocalSTEmbeddings(Embeddings):
                 "Install it with: pip install sentence-transformers"
             )
 
-        logger.info(f"Embeddings: initializing local provider with model {self.model_name}")
+        logger.info(
+            f"Embeddings: initializing local provider with model {self.model_name}"
+        )
 
         # Determine device based on hardware availability.
         # We always set low_cpu_mem_usage=False to prevent lazy loading (meta tensors)
@@ -166,7 +177,9 @@ class LocalSTEmbeddings(Embeddings):
         # but look alarming to users (e.g., "embeddings.position_ids | UNEXPECTED")
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
-            warnings.filterwarnings("ignore", message=".*was not found in model state dict.*")
+            warnings.filterwarnings(
+                "ignore", message=".*was not found in model state dict.*"
+            )
             warnings.filterwarnings("ignore", message=".*UNEXPECTED.*")
 
             # Also suppress transformers library logging temporarily
@@ -175,10 +188,13 @@ class LocalSTEmbeddings(Embeddings):
             transformers_logger.setLevel(logging.ERROR)
 
             try:
+                model_kwargs = {"low_cpu_mem_usage": False}
+                if self.default_task:
+                    model_kwargs["default_task"] = self.default_task
                 self._model = SentenceTransformer(
                     self.model_name,
                     device=device,
-                    model_kwargs={"low_cpu_mem_usage": False},
+                    model_kwargs=model_kwargs,
                     trust_remote_code=self.trust_remote_code,
                 )
             finally:
@@ -186,6 +202,18 @@ class LocalSTEmbeddings(Embeddings):
                 transformers_logger.setLevel(original_level)
 
         self._dimension = self._model.get_sentence_embedding_dimension()
+        # Fallback: some models (e.g. Jina v5) don't report dimension via metadata.
+        # Do a test encode to detect it.
+        if self._dimension is None:
+            import numpy as np
+
+            test_emb = self._model.encode(["dimension probe"], convert_to_numpy=True)
+            self._dimension = (
+                test_emb.shape[1] if len(test_emb.shape) > 1 else len(test_emb[0])
+            )
+            logger.info(
+                f"Embeddings: dimension detected via test encode: {self._dimension}"
+            )
         logger.info(f"Embeddings: local provider initialized (dim: {self._dimension})")
 
     def encode(self, texts: list[str]) -> list[list[float]]:
@@ -201,7 +229,9 @@ class LocalSTEmbeddings(Embeddings):
         if self._model is None:
             raise RuntimeError("Embeddings not initialized. Call initialize() first.")
 
-        embeddings = self._model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
+        embeddings = self._model.encode(
+            texts, convert_to_numpy=True, show_progress_bar=False
+        )
         return [emb.tolist() for emb in embeddings]
 
 
@@ -319,9 +349,13 @@ class RemoteTEIEmbeddings(Embeddings):
             if test_embeddings and len(test_embeddings) > 0:
                 self._dimension = len(test_embeddings[0])
 
-            logger.info(f"Embeddings: TEI provider initialized (model: {self._model_id}, dim: {self._dimension})")
+            logger.info(
+                f"Embeddings: TEI provider initialized (model: {self._model_id}, dim: {self._dimension})"
+            )
         except httpx.HTTPError as e:
-            raise RuntimeError(f"Failed to connect to TEI server at {self.base_url}: {e}")
+            raise RuntimeError(
+                f"Failed to connect to TEI server at {self.base_url}: {e}"
+            )
 
     def encode(self, texts: list[str]) -> list[list[float]]:
         """
@@ -420,10 +454,14 @@ class OpenAIEmbeddings(Embeddings):
         try:
             from openai import OpenAI
         except ImportError:
-            raise ImportError("openai is required for OpenAIEmbeddings. Install it with: pip install openai")
+            raise ImportError(
+                "openai is required for OpenAIEmbeddings. Install it with: pip install openai"
+            )
 
         base_url_msg = f" at {self.base_url}" if self.base_url else ""
-        logger.info(f"Embeddings: initializing OpenAI provider with model {self.model}{base_url_msg}")
+        logger.info(
+            f"Embeddings: initializing OpenAI provider with model {self.model}{base_url_msg}"
+        )
 
         # Build client kwargs, only including base_url if set (for Azure or custom endpoints)
         client_kwargs = {"api_key": self.api_key, "max_retries": self.max_retries}
@@ -443,7 +481,9 @@ class OpenAIEmbeddings(Embeddings):
             if response.data:
                 self._dimension = len(response.data[0].embedding)
 
-        logger.info(f"Embeddings: OpenAI provider initialized (model: {self.model}, dim: {self._dimension})")
+        logger.info(
+            f"Embeddings: OpenAI provider initialized (model: {self.model}, dim: {self._dimension})"
+        )
 
     def encode(self, texts: list[str]) -> list[list[float]]:
         """
@@ -546,10 +586,14 @@ class CohereEmbeddings(Embeddings):
         try:
             import cohere
         except ImportError:
-            raise ImportError("cohere is required for CohereEmbeddings. Install it with: pip install cohere")
+            raise ImportError(
+                "cohere is required for CohereEmbeddings. Install it with: pip install cohere"
+            )
 
         base_url_msg = f" at {self.base_url}" if self.base_url else ""
-        logger.info(f"Embeddings: initializing Cohere provider with model {self.model}{base_url_msg}")
+        logger.info(
+            f"Embeddings: initializing Cohere provider with model {self.model}{base_url_msg}"
+        )
 
         # Build client kwargs, only including base_url if set (for Azure or custom endpoints)
         client_kwargs = {"api_key": self.api_key, "timeout": self.timeout}
@@ -570,7 +614,9 @@ class CohereEmbeddings(Embeddings):
             if response.embeddings and isinstance(response.embeddings, list):
                 self._dimension = len(response.embeddings[0])
 
-        logger.info(f"Embeddings: Cohere provider initialized (model: {self.model}, dim: {self._dimension})")
+        logger.info(
+            f"Embeddings: Cohere provider initialized (model: {self.model}, dim: {self._dimension})"
+        )
 
     def encode(self, texts: list[str]) -> list[list[float]]:
         """
@@ -664,7 +710,9 @@ class LiteLLMEmbeddings(Embeddings):
         if self._client is not None:
             return
 
-        logger.info(f"Embeddings: initializing LiteLLM provider at {self.api_base} with model {self.model}")
+        logger.info(
+            f"Embeddings: initializing LiteLLM provider at {self.api_base} with model {self.model}"
+        )
 
         headers = {"Content-Type": "application/json"}
         if self.api_key:
@@ -682,9 +730,13 @@ class LiteLLMEmbeddings(Embeddings):
             result = response.json()
             if result.get("data") and len(result["data"]) > 0:
                 self._dimension = len(result["data"][0]["embedding"])
-            logger.info(f"Embeddings: LiteLLM provider initialized (model: {self.model}, dim: {self._dimension})")
+            logger.info(
+                f"Embeddings: LiteLLM provider initialized (model: {self.model}, dim: {self._dimension})"
+            )
         except httpx.HTTPError as e:
-            raise RuntimeError(f"Failed to connect to LiteLLM proxy at {self.api_base}: {e}")
+            raise RuntimeError(
+                f"Failed to connect to LiteLLM proxy at {self.api_base}: {e}"
+            )
 
     def encode(self, texts: list[str]) -> list[list[float]]:
         """
@@ -782,10 +834,14 @@ class LiteLLMSDKEmbeddings(Embeddings):
 
             self._litellm = litellm  # Store reference
         except ImportError:
-            raise ImportError("litellm is required for LiteLLMSDKEmbeddings. Install it with: pip install litellm")
+            raise ImportError(
+                "litellm is required for LiteLLMSDKEmbeddings. Install it with: pip install litellm"
+            )
 
         api_base_msg = f" at {self.api_base}" if self.api_base else ""
-        logger.info(f"Embeddings: initializing LiteLLM SDK provider with model {self.model}{api_base_msg}")
+        logger.info(
+            f"Embeddings: initializing LiteLLM SDK provider with model {self.model}{api_base_msg}"
+        )
 
         # Do a test embedding to detect dimension
         try:
@@ -806,12 +862,16 @@ class LiteLLMSDKEmbeddings(Embeddings):
             if response.data and len(response.data) > 0:
                 self._dimension = len(response.data[0]["embedding"])
             else:
-                raise RuntimeError(f"Unable to detect embedding dimension for model {self.model}")
+                raise RuntimeError(
+                    f"Unable to detect embedding dimension for model {self.model}"
+                )
 
         except Exception as e:
             raise RuntimeError(f"Failed to initialize LiteLLM SDK embeddings: {e}")
 
-        logger.info(f"Embeddings: LiteLLM SDK provider initialized (model: {self.model}, dim: {self._dimension})")
+        logger.info(
+            f"Embeddings: LiteLLM SDK provider initialized (model: {self.model}, dim: {self._dimension})"
+        )
 
     def encode(self, texts: list[str]) -> list[list[float]]:
         """
@@ -851,7 +911,9 @@ class LiteLLMSDKEmbeddings(Embeddings):
 
                 # Extract embeddings from response
                 # Sort by index to ensure correct order
-                batch_embeddings = sorted(response.data, key=lambda x: x.get("index", 0))
+                batch_embeddings = sorted(
+                    response.data, key=lambda x: x.get("index", 0)
+                )
                 all_embeddings.extend([e["embedding"] for e in batch_embeddings])
 
             except Exception as e:
@@ -883,29 +945,38 @@ def create_embeddings_from_env() -> Embeddings:
     if provider == "tei":
         url = config.embeddings_tei_url
         if not url:
-            raise ValueError(f"{ENV_EMBEDDINGS_TEI_URL} is required when {ENV_EMBEDDINGS_PROVIDER} is 'tei'")
+            raise ValueError(
+                f"{ENV_EMBEDDINGS_TEI_URL} is required when {ENV_EMBEDDINGS_PROVIDER} is 'tei'"
+            )
         return RemoteTEIEmbeddings(base_url=url)
     elif provider == "local":
         return LocalSTEmbeddings(
             model_name=config.embeddings_local_model,
             force_cpu=config.embeddings_local_force_cpu,
             trust_remote_code=config.embeddings_local_trust_remote_code,
+            default_task=config.embeddings_local_default_task,
         )
     elif provider == "openai":
         # Use dedicated embeddings API key, or fall back to LLM API key
-        api_key = os.environ.get(ENV_EMBEDDINGS_OPENAI_API_KEY) or os.environ.get(ENV_LLM_API_KEY)
+        api_key = os.environ.get(ENV_EMBEDDINGS_OPENAI_API_KEY) or os.environ.get(
+            ENV_LLM_API_KEY
+        )
         if not api_key:
             raise ValueError(
                 f"{ENV_EMBEDDINGS_OPENAI_API_KEY} or {ENV_LLM_API_KEY} is required "
                 f"when {ENV_EMBEDDINGS_PROVIDER} is 'openai'"
             )
-        model = os.environ.get(ENV_EMBEDDINGS_OPENAI_MODEL, DEFAULT_EMBEDDINGS_OPENAI_MODEL)
+        model = os.environ.get(
+            ENV_EMBEDDINGS_OPENAI_MODEL, DEFAULT_EMBEDDINGS_OPENAI_MODEL
+        )
         base_url = os.environ.get(ENV_EMBEDDINGS_OPENAI_BASE_URL) or None
         return OpenAIEmbeddings(api_key=api_key, model=model, base_url=base_url)
     elif provider == "cohere":
         api_key = config.embeddings_cohere_api_key
         if not api_key:
-            raise ValueError(f"{ENV_EMBEDDINGS_COHERE_API_KEY} is required when {ENV_EMBEDDINGS_PROVIDER} is 'cohere'")
+            raise ValueError(
+                f"{ENV_EMBEDDINGS_COHERE_API_KEY} is required when {ENV_EMBEDDINGS_PROVIDER} is 'cohere'"
+            )
         return CohereEmbeddings(
             api_key=api_key,
             model=config.embeddings_cohere_model,
