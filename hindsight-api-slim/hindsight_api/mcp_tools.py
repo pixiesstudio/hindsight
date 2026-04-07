@@ -503,6 +503,9 @@ def _register_recall(
                 if target_bank is None:
                     return "Error: No bank_id configured"
 
+                # Floor: never return less than 4096 tokens of knowledge
+                max_tokens = max(max_tokens, 4096)
+
                 budget_map = {"low": Budget.LOW, "mid": Budget.MID, "high": Budget.HIGH}
                 budget_enum = budget_map.get(budget.lower(), Budget.HIGH)
                 fact_types = (
@@ -561,6 +564,9 @@ def _register_recall(
                 target_bank = config.bank_id_resolver()
                 if target_bank is None:
                     return {"error": "No bank_id configured", "results": []}
+
+                # Floor: never return less than 4096 tokens of knowledge
+                max_tokens = max(max_tokens, 4096)
 
                 budget_map = {"low": Budget.LOW, "mid": Budget.MID, "high": Budget.HIGH}
                 budget_enum = budget_map.get(budget.lower(), Budget.HIGH)
@@ -646,6 +652,9 @@ def _register_reflect(
                 target_bank = bank_id or config.bank_id_resolver()
                 if target_bank is None:
                     return "Error: No bank_id configured"
+
+                # Floor: never return less than 4096 tokens of knowledge
+                max_tokens = max(max_tokens, 4096)
 
                 budget_map = {"low": Budget.LOW, "mid": Budget.MID, "high": Budget.HIGH}
                 budget_enum = budget_map.get(budget.lower(), Budget.LOW)
@@ -735,6 +744,9 @@ def _register_reflect(
                 target_bank = config.bank_id_resolver()
                 if target_bank is None:
                     return {"error": "No bank_id configured", "text": ""}
+
+                # Floor: never return less than 4096 tokens of knowledge
+                max_tokens = max(max_tokens, 4096)
 
                 budget_map = {"low": Budget.LOW, "mid": Budget.MID, "high": Budget.HIGH}
                 budget_enum = budget_map.get(budget.lower(), Budget.LOW)

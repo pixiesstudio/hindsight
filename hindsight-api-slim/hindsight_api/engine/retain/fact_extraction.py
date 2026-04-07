@@ -59,7 +59,9 @@ def _infer_temporal_date(fact_text: str, event_date: datetime | None) -> str | N
     for pattern, offset_days in temporal_patterns.items():
         if re.search(pattern, fact_lower):
             target_date = event_date + timedelta(days=offset_days)
-            return target_date.replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+            return target_date.replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ).isoformat()
 
     # If no relative time expression found, return None
     return None
@@ -87,7 +89,9 @@ class Fact(BaseModel):
 
     # Required fields
     fact: str = Field(description="Combined fact text: what | when | where | who | why")
-    fact_type: Literal["world", "experience", "opinion"] = Field(description="Perspective: world/experience/opinion")
+    fact_type: Literal["world", "experience", "opinion"] = Field(
+        description="Perspective: world/experience/opinion"
+    )
 
     # Optional temporal fields
     occurred_start: str | None = None
@@ -95,7 +99,8 @@ class Fact(BaseModel):
 
     # Optional location field
     where: str | None = Field(
-        None, description="WHERE the fact occurred or is about (specific location, place, or area)"
+        None,
+        description="WHERE the fact occurred or is about (specific location, place, or area)",
     )
 
     # Optional structured data
@@ -106,7 +111,9 @@ class Fact(BaseModel):
 class CausalRelation(BaseModel):
     """Causal relationship from this fact to a previous fact (stored format)."""
 
-    target_fact_index: int = Field(description="Index of the related fact in the facts array (0-based).")
+    target_fact_index: int = Field(
+        description="Index of the related fact in the facts array (0-based)."
+    )
     relation_type: Literal["caused_by"] = Field(
         description="How this fact relates to the target: 'caused_by' = this fact was caused by the target"
     )
@@ -147,22 +154,37 @@ class ExtractedFact(BaseModel):
 
     model_config = ConfigDict(
         json_schema_mode="validation",
-        json_schema_extra={"required": ["what", "when", "where", "who", "why", "fact_type"]},
+        json_schema_extra={
+            "required": ["what", "when", "where", "who", "why", "fact_type"]
+        },
     )
 
     what: str = Field(description="Core fact - concise but complete (1-2 sentences)")
     when: str = Field(description="When it happened. 'N/A' if unknown.")
     where: str = Field(description="Location if relevant. 'N/A' if none.")
-    who: str = Field(description="People involved with relationships. 'N/A' if general.")
+    who: str = Field(
+        description="People involved with relationships. 'N/A' if general."
+    )
     why: str = Field(description="Context/significance if important. 'N/A' if obvious.")
 
-    fact_kind: str = Field(default="conversation", description="'event' or 'conversation'")
-    occurred_start: str | None = Field(default=None, description="ISO timestamp for events")
-    occurred_end: str | None = Field(default=None, description="ISO timestamp for event end")
-    fact_type: Literal["world", "assistant"] = Field(description="'world' or 'assistant'")
-    entities: list[Entity] | None = Field(default=None, description="People, places, concepts")
+    fact_kind: str = Field(
+        default="conversation", description="'event' or 'conversation'"
+    )
+    occurred_start: str | None = Field(
+        default=None, description="ISO timestamp for events"
+    )
+    occurred_end: str | None = Field(
+        default=None, description="ISO timestamp for event end"
+    )
+    fact_type: Literal["world", "assistant"] = Field(
+        description="'world' or 'assistant'"
+    )
+    entities: list[Entity] | None = Field(
+        default=None, description="People, places, concepts"
+    )
     causal_relations: list[FactCausalRelation] | None = Field(
-        default=None, description="Links to previous facts (target_index < this fact's index)"
+        default=None,
+        description="Links to previous facts (target_index < this fact's index)",
     )
 
     @field_validator("entities", mode="before")
@@ -194,7 +216,9 @@ class ExtractedFact(BaseModel):
 class FactExtractionResponse(BaseModel):
     """Response containing all extracted facts (causal relations are embedded in each fact)."""
 
-    facts: list[ExtractedFact] = Field(description="List of extracted factual statements")
+    facts: list[ExtractedFact] = Field(
+        description="List of extracted factual statements"
+    )
 
 
 class ExtractedFactVerbose(BaseModel):
@@ -202,7 +226,9 @@ class ExtractedFactVerbose(BaseModel):
 
     model_config = ConfigDict(
         json_schema_mode="validation",
-        json_schema_extra={"required": ["what", "when", "where", "who", "why", "fact_type"]},
+        json_schema_extra={
+            "required": ["what", "when", "where", "who", "why", "fact_type"]
+        },
     )
 
     what: str = Field(
@@ -286,7 +312,9 @@ class ExtractedFactVerbose(BaseModel):
 class FactExtractionResponseVerbose(BaseModel):
     """Response for verbose fact extraction."""
 
-    facts: list[ExtractedFactVerbose] = Field(description="List of extracted factual statements")
+    facts: list[ExtractedFactVerbose] = Field(
+        description="List of extracted factual statements"
+    )
 
 
 class ExtractedFactNoCausal(BaseModel):
@@ -294,22 +322,38 @@ class ExtractedFactNoCausal(BaseModel):
 
     model_config = ConfigDict(
         json_schema_mode="validation",
-        json_schema_extra={"required": ["what", "when", "where", "who", "why", "fact_type"]},
+        json_schema_extra={
+            "required": ["what", "when", "where", "who", "why", "fact_type"]
+        },
     )
 
     # Same fields as ExtractedFact but without causal_relations
-    what: str = Field(description="WHAT happened - COMPLETE, DETAILED description with ALL specifics.")
-    when: str = Field(description="WHEN it happened - include temporal information if mentioned.")
-    where: str = Field(description="WHERE it happened - SPECIFIC locations if applicable.")
-    who: str = Field(description="WHO is involved - ALL people/entities with relationships.")
-    why: str = Field(description="WHY it matters - emotional, contextual, and motivational details.")
+    what: str = Field(
+        description="WHAT happened - COMPLETE, DETAILED description with ALL specifics."
+    )
+    when: str = Field(
+        description="WHEN it happened - include temporal information if mentioned."
+    )
+    where: str = Field(
+        description="WHERE it happened - SPECIFIC locations if applicable."
+    )
+    who: str = Field(
+        description="WHO is involved - ALL people/entities with relationships."
+    )
+    why: str = Field(
+        description="WHY it matters - emotional, contextual, and motivational details."
+    )
 
     fact_kind: str = Field(
         default="conversation",
         description="'event' = specific datable occurrence, 'conversation' = general info",
     )
-    occurred_start: str | None = Field(default=None, description="WHEN the event happened (ISO timestamp).")
-    occurred_end: str | None = Field(default=None, description="WHEN the event ended (ISO timestamp).")
+    occurred_start: str | None = Field(
+        default=None, description="WHEN the event happened (ISO timestamp)."
+    )
+    occurred_end: str | None = Field(
+        default=None, description="WHEN the event ended (ISO timestamp)."
+    )
     fact_type: Literal["world", "assistant"] = Field(
         description="'world' = about the user/others. 'assistant' = experience with assistant."
     )
@@ -329,7 +373,9 @@ class ExtractedFactNoCausal(BaseModel):
 class FactExtractionResponseNoCausal(BaseModel):
     """Response for fact extraction without causal relations."""
 
-    facts: list[ExtractedFactNoCausal] = Field(description="List of extracted factual statements")
+    facts: list[ExtractedFactNoCausal] = Field(
+        description="List of extracted factual statements"
+    )
 
 
 class VerbatimExtractedFact(BaseModel):
@@ -347,13 +393,25 @@ class VerbatimExtractedFact(BaseModel):
 
     when: str = Field(description="When it happened. 'N/A' if unknown.")
     where: str = Field(description="Location if relevant. 'N/A' if none.")
-    who: str = Field(description="People involved with relationships. 'N/A' if general.")
+    who: str = Field(
+        description="People involved with relationships. 'N/A' if general."
+    )
 
-    fact_kind: str = Field(default="conversation", description="'event' or 'conversation'")
-    occurred_start: str | None = Field(default=None, description="ISO timestamp for events")
-    occurred_end: str | None = Field(default=None, description="ISO timestamp for event end")
-    fact_type: Literal["world", "assistant"] = Field(description="'world' or 'assistant'")
-    entities: list[Entity] | None = Field(default=None, description="People, places, concepts")
+    fact_kind: str = Field(
+        default="conversation", description="'event' or 'conversation'"
+    )
+    occurred_start: str | None = Field(
+        default=None, description="ISO timestamp for events"
+    )
+    occurred_end: str | None = Field(
+        default=None, description="ISO timestamp for event end"
+    )
+    fact_type: Literal["world", "assistant"] = Field(
+        description="'world' or 'assistant'"
+    )
+    entities: list[Entity] | None = Field(
+        default=None, description="People, places, concepts"
+    )
 
     @field_validator("entities", mode="before")
     @classmethod
@@ -366,7 +424,9 @@ class VerbatimExtractedFact(BaseModel):
 class VerbatimFactExtractionResponse(BaseModel):
     """Response for verbatim extraction mode (one entry per chunk, no fact text)."""
 
-    facts: list[VerbatimExtractedFact] = Field(description="List of metadata entries (one per chunk)")
+    facts: list[VerbatimExtractedFact] = Field(
+        description="List of metadata entries (one per chunk)"
+    )
 
 
 def chunk_text(text: str, max_chars: int) -> list[str]:
@@ -401,7 +461,7 @@ def chunk_text(text: str, max_chars: int) -> list[str]:
     # Fall back to sentence-aware text splitting
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=max_chars,
-        chunk_overlap=0,
+        chunk_overlap=max(max_chars // 10, 50),
         length_function=len,
         is_separator_regex=False,
         separators=[
@@ -739,7 +799,9 @@ Example: "Lost job → couldn't pay rent → moved apartment"
 - Fact 2: Moved apartment, causal_relations: [{target_index: 1, relation_type: "caused_by"}]"""
 
 
-def _build_labels_prompt_section(labels_cfg: EntityLabelsConfig | list | None, free_form_entities: bool = True) -> str:
+def _build_labels_prompt_section(
+    labels_cfg: EntityLabelsConfig | list | None, free_form_entities: bool = True
+) -> str:
     """Build the entity labels classification section for the extraction prompt."""
     if labels_cfg is None:
         return ""
@@ -776,14 +838,20 @@ def _build_labels_prompt_section(labels_cfg: EntityLabelsConfig | list | None, f
             # Free-text: no predefined values — LLM writes any relevant string or null
             lines.append(f"- {attr.key} (free text or null): {attr.description}")
         else:
-            mode = "multi-value (list)" if attr.type == "multi-values" else "single value or null"
+            mode = (
+                "multi-value (list)"
+                if attr.type == "multi-values"
+                else "single value or null"
+            )
             lines.append(f"- {attr.key} ({mode}): {attr.description}")
             for v in attr.values:
                 desc = f" — {v.description}" if v.description else ""
                 lines.append(f'    • "{v.value}"{desc}')
         lines.append("")
 
-    lines.append("Only assign labels when clearly applicable. Leave null/empty if the fact does not match.")
+    lines.append(
+        "Only assign labels when clearly applicable. Leave null/empty if the fact does not match."
+    )
     return "\n".join(lines)
 
 
@@ -845,8 +913,14 @@ def _build_extraction_prompt_and_schema(config) -> tuple[str, type]:
         base_response_class = VerbatimFactExtractionResponse
     elif extract_causal_links:
         prompt = prompt + CAUSAL_RELATIONSHIPS_SECTION
-        base_fact_class = ExtractedFactVerbose if extraction_mode == "verbose" else ExtractedFact
-        base_response_class = FactExtractionResponseVerbose if extraction_mode == "verbose" else FactExtractionResponse
+        base_fact_class = (
+            ExtractedFactVerbose if extraction_mode == "verbose" else ExtractedFact
+        )
+        base_response_class = (
+            FactExtractionResponseVerbose
+            if extraction_mode == "verbose"
+            else FactExtractionResponse
+        )
     else:
         base_fact_class = ExtractedFactNoCausal
         base_response_class = FactExtractionResponseNoCausal
@@ -880,7 +954,11 @@ def _build_extraction_prompt_and_schema(config) -> tuple[str, type]:
             # Inherit parent's required fields and add 'labels' so it appears in the JSON schema
             # required array (the base class json_schema_extra overrides required entirely)
             base_extra = base_fact_class.model_config.get("json_schema_extra")
-            base_required = cast(dict, base_extra).get("required", []) if isinstance(base_extra, dict) else []
+            base_required = (
+                cast(dict, base_extra).get("required", [])
+                if isinstance(base_extra, dict)
+                else []
+            )
             DynamicFact = create_model(
                 "LabelsFact",
                 __base__=base_fact_class,
@@ -912,7 +990,9 @@ def _build_user_message(
 
     if event_date is not None:
         event_date = parse_datetime_flexible(event_date)
-        event_date_str = f"{event_date.strftime('%A, %B %d, %Y')} ({event_date.isoformat()})"
+        event_date_str = (
+            f"{event_date.strftime('%A, %B %d, %Y')} ({event_date.isoformat()})"
+        )
     else:
         event_date_str = "Unknown"
 
@@ -931,11 +1011,16 @@ Text:
 {sanitized_chunk}"""
 
 
-def _build_request_body(llm_config, config, prompt: str, user_message: str, response_schema: type) -> dict:
+def _build_request_body(
+    llm_config, config, prompt: str, user_message: str, response_schema: type
+) -> dict:
     """Build request body for LLM API call."""
     request_body = {
         "model": llm_config.model,
-        "messages": [{"role": "system", "content": prompt}, {"role": "user", "content": user_message}],
+        "messages": [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": user_message},
+        ],
         "temperature": 0.1,
     }
 
@@ -944,7 +1029,10 @@ def _build_request_body(llm_config, config, prompt: str, user_message: str, resp
         request_body["max_completion_tokens"] = config.retain_max_completion_tokens
 
     # Add service_tier for OpenAI Flex Processing
-    if llm_config.provider == "openai" and llm_config._provider_impl.openai_service_tier:
+    if (
+        llm_config.provider == "openai"
+        and llm_config._provider_impl.openai_service_tier
+    ):
         request_body["service_tier"] = llm_config._provider_impl.openai_service_tier
 
     # Add response_format (JSON schema)
@@ -989,12 +1077,16 @@ async def _extract_facts_from_chunk(
     extract_causal_links = config.retain_extract_causal_links
 
     # Build user message using helper function
-    user_message = _build_user_message(chunk, chunk_index, total_chunks, event_date, context, metadata)
+    user_message = _build_user_message(
+        chunk, chunk_index, total_chunks, event_date, context, metadata
+    )
 
     # Retry logic for JSON validation errors
     # Use retain-specific overrides if set, otherwise fall back to global LLM config
     llm_max_retries = (
-        config.retain_llm_max_retries if config.retain_llm_max_retries is not None else config.llm_max_retries
+        config.retain_llm_max_retries
+        if config.retain_llm_max_retries is not None
+        else config.llm_max_retries
     )
     last_error: Exception | None = None
 
@@ -1007,11 +1099,16 @@ async def _extract_facts_from_chunk(
                 else config.llm_initial_backoff
             )
             max_backoff = (
-                config.retain_llm_max_backoff if config.retain_llm_max_backoff is not None else config.llm_max_backoff
+                config.retain_llm_max_backoff
+                if config.retain_llm_max_backoff is not None
+                else config.llm_max_backoff
             )
 
             extraction_response_json, call_usage = await llm_config.call(
-                messages=[{"role": "system", "content": prompt}, {"role": "user", "content": user_message}],
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": user_message},
+                ],
                 response_format=response_schema,
                 scope="retain_extract_facts",
                 temperature=0.1,
@@ -1064,7 +1161,13 @@ async def _extract_facts_from_chunk(
                 # Helper to get non-empty value
                 def get_value(field_name):
                     value = llm_fact.get(field_name)
-                    if value and value != "" and value != [] and value != {} and str(value).upper() != "N/A":
+                    if (
+                        value
+                        and value != ""
+                        and value != []
+                        and value != {}
+                        and str(value).upper() != "N/A"
+                    ):
                         return value
                     return None
 
@@ -1092,7 +1195,9 @@ async def _extract_facts_from_chunk(
                     fact_type = "world"
                 else:
                     raw_fact_kind = llm_fact.get("fact_kind")
-                    fact_type = "experience" if raw_fact_kind == "assistant" else "world"
+                    fact_type = (
+                        "experience" if raw_fact_kind == "assistant" else "world"
+                    )
 
                 # Get fact_kind for temporal handling (but don't store it)
                 fact_kind = llm_fact.get("fact_kind", "conversation")
@@ -1126,7 +1231,9 @@ async def _extract_facts_from_chunk(
 
                     # If LLM didn't set temporal fields, try to extract them from the fact text
                     if not occurred_start:
-                        fact_data["occurred_start"] = _infer_temporal_date(combined_text, event_date)
+                        fact_data["occurred_start"] = _infer_temporal_date(
+                            combined_text, event_date
+                        )
                     else:
                         fact_data["occurred_start"] = occurred_start
 
@@ -1160,32 +1267,45 @@ async def _extract_facts_from_chunk(
                     labels_lookup = build_labels_lookup(labels_cfg)
                     labels_data = llm_fact.get("labels") or {}
                     if isinstance(labels_data, dict):
-                        existing_texts_lower = {e.text.lower() for e in validated_entities}
+                        existing_texts_lower = {
+                            e.text.lower() for e in validated_entities
+                        }
                         for group in labels_cfg.attributes:
                             value = labels_data.get(group.key)
                             if not value:
                                 continue
                             values_list = value if isinstance(value, list) else [value]
                             for v in values_list:
-                                if not isinstance(v, str) or not v.strip() or v.lower() in ("none", "null", "n/a"):
+                                if (
+                                    not isinstance(v, str)
+                                    or not v.strip()
+                                    or v.lower() in ("none", "null", "n/a")
+                                ):
                                     continue
                                 label_str = f"{group.key}:{v.strip()}"
                                 if group.type == "text":
                                     if label_str.lower() not in existing_texts_lower:
-                                        validated_entities.append(Entity(text=label_str))
+                                        validated_entities.append(
+                                            Entity(text=label_str)
+                                        )
                                         existing_texts_lower.add(label_str.lower())
                                 elif (
-                                    label_str.lower() in labels_lookup and label_str.lower() not in existing_texts_lower
+                                    label_str.lower() in labels_lookup
+                                    and label_str.lower() not in existing_texts_lower
                                 ):
                                     validated_entities.append(Entity(text=label_str))
                                     existing_texts_lower.add(label_str.lower())
                                 else:
-                                    logger.warning(f"Label '{label_str}' not in valid label values, skipping")
+                                    logger.warning(
+                                        f"Label '{label_str}' not in valid label values, skipping"
+                                    )
 
                     # In labels-only mode, keep only label entities
                     if not free_form_entities:
                         validated_entities = [
-                            e for e in validated_entities if is_label_entity(e.text, labels_cfg, labels_lookup)
+                            e
+                            for e in validated_entities
+                            if is_label_entity(e.text, labels_cfg, labels_lookup)
                         ]
                 elif not free_form_entities:
                     # No labels but free_form disabled: clear all entities
@@ -1233,7 +1353,9 @@ async def _extract_facts_from_chunk(
 
                 # Set mentioned_at to the event_date (when the conversation/document occurred),
                 # or None when the caller opted into no timestamp.
-                fact_data["mentioned_at"] = event_date.isoformat() if event_date is not None else None
+                fact_data["mentioned_at"] = (
+                    event_date.isoformat() if event_date is not None else None
+                )
 
                 # Build Fact model instance
                 try:
@@ -1245,7 +1367,11 @@ async def _extract_facts_from_chunk(
                     continue
 
             # If we got malformed facts and haven't exhausted retries, try again
-            if has_malformed_facts and len(chunk_facts) < len(raw_facts) * 0.8 and attempt < llm_max_retries - 1:
+            if (
+                has_malformed_facts
+                and len(chunk_facts) < len(raw_facts) * 0.8
+                and attempt < llm_max_retries - 1
+            ):
                 logger.warning(
                     f"Got {len(raw_facts) - len(chunk_facts)} malformed facts out of {len(raw_facts)} on attempt {attempt + 1}/{llm_max_retries}. Retrying..."
                 )
@@ -1291,7 +1417,9 @@ async def _extract_facts_from_chunk(
     # If we exhausted all retries, raise the last error or a descriptive fallback
     if last_error is not None:
         raise last_error
-    raise RuntimeError(f"Fact extraction failed after {llm_max_retries} attempts: LLM did not return valid JSON")
+    raise RuntimeError(
+        f"Fact extraction failed after {llm_max_retries} attempts: LLM did not return valid JSON"
+    )
 
 
 async def _extract_facts_with_auto_split(
@@ -1410,7 +1538,9 @@ async def _extract_facts_with_auto_split(
             all_facts.extend(sub_facts)
             total_usage = total_usage + sub_usage
 
-        logger.info(f"Successfully extracted {len(all_facts)} facts from split chunk {chunk_index + 1}")
+        logger.info(
+            f"Successfully extracted {len(all_facts)} facts from split chunk {chunk_index + 1}"
+        )
 
         return all_facts, total_usage
 
@@ -1537,8 +1667,12 @@ async def extract_facts_from_contents_batch_api(
 
     # Check if provider supports batch API
     if not await llm_config._provider_impl.supports_batch_api():
-        logger.warning(f"Batch API not supported for provider {llm_config.provider}, falling back to sync mode")
-        return await extract_facts_from_contents(contents, llm_config, agent_name, config, pool, operation_id, schema)
+        logger.warning(
+            f"Batch API not supported for provider {llm_config.provider}, falling back to sync mode"
+        )
+        return await extract_facts_from_contents(
+            contents, llm_config, agent_name, config, pool, operation_id, schema
+        )
 
     # Check if we're resuming an existing batch (crash recovery)
     batch_id = None
@@ -1558,10 +1692,14 @@ async def extract_facts_from_contents_batch_api(
             batch_id = metadata.get("batch_id")
 
             if batch_id:
-                logger.info(f"Resuming existing batch: batch_id={batch_id} (crash recovery)")
+                logger.info(
+                    f"Resuming existing batch: batch_id={batch_id} (crash recovery)"
+                )
 
     # Step 1: Chunk all contents and build batch requests (skip if resuming)
-    all_chunks_info = []  # List of (chunk_text, content_index, chunk_index_in_content, event_date, context)
+    all_chunks_info = (
+        []
+    )  # List of (chunk_text, content_index, chunk_index_in_content, event_date, context)
     batch_requests = []
 
     # Build prompt and schema once (same for all chunks)
@@ -1571,21 +1709,41 @@ async def extract_facts_from_contents_batch_api(
         chunks = chunk_text(item.content, max_chars=config.retain_chunk_size)
 
         for chunk_index_in_content, chunk in enumerate(chunks):
-            all_chunks_info.append((chunk, content_index, chunk_index_in_content, item.event_date, item.context))
+            all_chunks_info.append(
+                (
+                    chunk,
+                    content_index,
+                    chunk_index_in_content,
+                    item.event_date,
+                    item.context,
+                )
+            )
 
             # Build batch request for this chunk
             custom_id = f"chunk_{len(all_chunks_info) - 1}"  # Global chunk index
 
             # Build user message using helper function
             user_message = _build_user_message(
-                chunk, chunk_index_in_content, len(chunks), item.event_date, item.context, item.metadata or None
+                chunk,
+                chunk_index_in_content,
+                len(chunks),
+                item.event_date,
+                item.context,
+                item.metadata or None,
             )
 
             # Build request body using helper function
-            request_body = _build_request_body(llm_config, config, prompt, user_message, response_schema)
+            request_body = _build_request_body(
+                llm_config, config, prompt, user_message, response_schema
+            )
 
             batch_requests.append(
-                {"custom_id": custom_id, "method": "POST", "url": "/v1/chat/completions", "body": request_body}
+                {
+                    "custom_id": custom_id,
+                    "method": "POST",
+                    "url": "/v1/chat/completions",
+                    "body": request_body,
+                }
             )
 
     if not batch_requests and not batch_id:  # No requests and not resuming
@@ -1598,7 +1756,9 @@ async def extract_facts_from_contents_batch_api(
         batch_metadata = await llm_config._provider_impl.submit_batch(batch_requests)
         batch_id = batch_metadata["batch_id"]
 
-        logger.info(f"Batch submitted: {batch_id}, polling every {config.retain_batch_poll_interval_seconds}s")
+        logger.info(
+            f"Batch submitted: {batch_id}, polling every {config.retain_batch_poll_interval_seconds}s"
+        )
 
         # CRITICAL: Store minimal batch state in operation metadata for crash recovery
         # This allows resuming polling if worker restarts
@@ -1622,7 +1782,9 @@ async def extract_facts_from_contents_batch_api(
                 json.dumps(batch_state),
                 operation_id,
             )
-            logger.info(f"Stored batch state for operation {operation_id} (crash recovery enabled)")
+            logger.info(
+                f"Stored batch state for operation {operation_id} (crash recovery enabled)"
+            )
     else:
         logger.info(f"Resuming polling for existing batch: {batch_id}")
 
@@ -1645,7 +1807,9 @@ async def extract_facts_from_contents_batch_api(
             break
         elif status in ("failed", "expired", "cancelled"):
             error_msg = status_info.get("errors", "Unknown error")
-            raise RuntimeError(f"Batch {batch_id} failed with status {status}: {error_msg}")
+            raise RuntimeError(
+                f"Batch {batch_id} failed with status {status}: {error_msg}"
+            )
 
         # Wait before polling again
         await asyncio.sleep(config.retain_batch_poll_interval_seconds)
@@ -1663,9 +1827,13 @@ async def extract_facts_from_contents_batch_api(
     chunks_metadata = []
     total_usage = TokenUsage()
 
-    for chunk_idx, (chunk_content, content_index, chunk_index_in_content, event_date, context) in enumerate(
-        all_chunks_info
-    ):
+    for chunk_idx, (
+        chunk_content,
+        content_index,
+        chunk_index_in_content,
+        event_date,
+        context,
+    ) in enumerate(all_chunks_info):
         custom_id = f"chunk_{chunk_idx}"
         result = results_by_id.get(custom_id)
 
@@ -1673,7 +1841,10 @@ async def extract_facts_from_contents_batch_api(
             logger.warning(f"Missing result for {custom_id}, skipping")
             chunks_metadata.append(
                 ChunkMetadata(
-                    chunk_text=chunk_content, fact_count=0, content_index=content_index, chunk_index=chunk_idx
+                    chunk_text=chunk_content,
+                    fact_count=0,
+                    content_index=content_index,
+                    chunk_index=chunk_idx,
                 )
             )
             continue
@@ -1683,7 +1854,10 @@ async def extract_facts_from_contents_batch_api(
             logger.error(f"Error in {custom_id}: {result['error']}")
             chunks_metadata.append(
                 ChunkMetadata(
-                    chunk_text=chunk_content, fact_count=0, content_index=content_index, chunk_index=chunk_idx
+                    chunk_text=chunk_content,
+                    fact_count=0,
+                    content_index=content_index,
+                    chunk_index=chunk_idx,
                 )
             )
             continue
@@ -1696,7 +1870,10 @@ async def extract_facts_from_contents_batch_api(
             logger.warning(f"No choices in response for {custom_id}")
             chunks_metadata.append(
                 ChunkMetadata(
-                    chunk_text=chunk_content, fact_count=0, content_index=content_index, chunk_index=chunk_idx
+                    chunk_text=chunk_content,
+                    fact_count=0,
+                    content_index=content_index,
+                    chunk_index=chunk_idx,
                 )
             )
             continue
@@ -1711,7 +1888,10 @@ async def extract_facts_from_contents_batch_api(
             logger.error(f"Failed to parse JSON for {custom_id}: {e}")
             chunks_metadata.append(
                 ChunkMetadata(
-                    chunk_text=chunk_content, fact_count=0, content_index=content_index, chunk_index=chunk_idx
+                    chunk_text=chunk_content,
+                    fact_count=0,
+                    content_index=content_index,
+                    chunk_index=chunk_idx,
                 )
             )
             continue
@@ -1726,7 +1906,13 @@ async def extract_facts_from_contents_batch_api(
 
             def get_value(field_name):
                 value = llm_fact.get(field_name)
-                if value and value != "" and value != [] and value != {} and str(value).upper() != "N/A":
+                if (
+                    value
+                    and value != ""
+                    and value != []
+                    and value != {}
+                    and str(value).upper() != "N/A"
+                ):
                     return value
                 return None
 
@@ -1773,7 +1959,9 @@ async def extract_facts_from_contents_batch_api(
                 occurred_end = get_value("occurred_end")
 
                 if not occurred_start:
-                    fact_data["occurred_start"] = _infer_temporal_date(combined_text, event_date)
+                    fact_data["occurred_start"] = _infer_temporal_date(
+                        combined_text, event_date
+                    )
                 else:
                     fact_data["occurred_start"] = occurred_start
 
@@ -1810,7 +1998,11 @@ async def extract_facts_from_contents_batch_api(
                             continue
                         values_list = value if isinstance(value, list) else [value]
                         for v in values_list:
-                            if not isinstance(v, str) or not v.strip() or v.lower() in ("none", "null", "n/a"):
+                            if (
+                                not isinstance(v, str)
+                                or not v.strip()
+                                or v.lower() in ("none", "null", "n/a")
+                            ):
                                 continue
                             label_str = f"{group.key}:{v.strip()}"
                             if group.type == "text":
@@ -1826,7 +2018,11 @@ async def extract_facts_from_contents_batch_api(
 
                 if not free_form_entities_batch:
                     validated_entities = [
-                        e for e in validated_entities if is_label_entity(e.text, labels_cfg_batch, labels_lookup_batch)
+                        e
+                        for e in validated_entities
+                        if is_label_entity(
+                            e.text, labels_cfg_batch, labels_lookup_batch
+                        )
                     ]
             elif not free_form_entities_batch:
                 validated_entities = []
@@ -1854,7 +2050,9 @@ async def extract_facts_from_contents_batch_api(
                         try:
                             validated_relations.append(
                                 CausalRelation(
-                                    target_fact_index=target_idx, relation_type=relation_type, strength=strength
+                                    target_fact_index=target_idx,
+                                    relation_type=relation_type,
+                                    strength=strength,
                                 )
                             )
                         except Exception:
@@ -1865,7 +2063,9 @@ async def extract_facts_from_contents_batch_api(
 
             # Set mentioned_at to the event_date (when the conversation/document occurred),
             # or None when the caller opted into no timestamp.
-            fact_data["mentioned_at"] = event_date.isoformat() if event_date is not None else None
+            fact_data["mentioned_at"] = (
+                event_date.isoformat() if event_date is not None else None
+            )
 
             try:
                 fact = Fact(fact=combined_text, fact_type=fact_type, **fact_data)
@@ -1899,7 +2099,9 @@ async def extract_facts_from_contents_batch_api(
     fact_start_idx = 0
 
     for chunk_meta in chunks_metadata:
-        chunk_facts = all_facts_from_llm[fact_start_idx : fact_start_idx + chunk_meta.fact_count]
+        chunk_facts = all_facts_from_llm[
+            fact_start_idx : fact_start_idx + chunk_meta.fact_count
+        ]
         facts_by_chunk.append((chunk_meta, chunk_facts))
         fact_start_idx += chunk_meta.fact_count
 
@@ -1913,11 +2115,23 @@ async def extract_facts_from_contents_batch_api(
         for fact_from_llm in chunk_facts:
             extracted_fact = ExtractedFactType(
                 fact_text=fact_from_llm.fact,
-                fact_type="experience" if fact_from_llm.fact_type == "assistant" else "world",
+                fact_type=(
+                    "experience" if fact_from_llm.fact_type == "assistant" else "world"
+                ),
                 entities=[e.text for e in (fact_from_llm.entities or [])],
-                occurred_start=_parse_datetime(fact_from_llm.occurred_start) if fact_from_llm.occurred_start else None,
-                occurred_end=_parse_datetime(fact_from_llm.occurred_end) if fact_from_llm.occurred_end else None,
-                causal_relations=_convert_causal_relations(fact_from_llm.causal_relations or [], global_fact_idx),
+                occurred_start=(
+                    _parse_datetime(fact_from_llm.occurred_start)
+                    if fact_from_llm.occurred_start
+                    else None
+                ),
+                occurred_end=(
+                    _parse_datetime(fact_from_llm.occurred_end)
+                    if fact_from_llm.occurred_end
+                    else None
+                ),
+                causal_relations=_convert_causal_relations(
+                    fact_from_llm.causal_relations or [], global_fact_idx
+                ),
                 content_index=chunk_meta.content_index,
                 chunk_index=chunk_meta.chunk_index,
                 context=content.context,
@@ -1936,7 +2150,9 @@ async def extract_facts_from_contents_batch_api(
     # Step 8: Auto-tag facts from label groups with tag=True
     _inject_label_tags(extracted_facts, config)
 
-    logger.info(f"Batch API extracted {len(extracted_facts)} facts from {len(all_chunks_info)} chunks")
+    logger.info(
+        f"Batch API extracted {len(extracted_facts)} facts from {len(all_chunks_info)} chunks"
+    )
 
     return extracted_facts, chunks_metadata, total_usage
 
@@ -2060,14 +2276,17 @@ async def extract_facts_from_contents(
     global_chunk_idx = 0
     global_fact_idx = 0
 
-    for content_index, (content, (facts_from_llm, chunks_from_llm, content_usage)) in enumerate(
-        zip(contents, all_fact_results)
-    ):
+    for content_index, (
+        content,
+        (facts_from_llm, chunks_from_llm, content_usage),
+    ) in enumerate(zip(contents, all_fact_results)):
         total_usage = total_usage + content_usage
         chunk_start_idx = global_chunk_idx
 
         # Convert chunk tuples to ChunkMetadata objects
-        for chunk_index_in_content, (chunk_text, chunk_fact_count) in enumerate(chunks_from_llm):
+        for chunk_index_in_content, (chunk_text, chunk_fact_count) in enumerate(
+            chunks_from_llm
+        ):
             chunk_metadata = ChunkMetadata(
                 chunk_text=chunk_text,
                 fact_count=chunk_fact_count,
@@ -2079,7 +2298,9 @@ async def extract_facts_from_contents(
 
         # Convert facts to ExtractedFact objects with proper indexing
         fact_idx_in_content = 0
-        for chunk_idx_in_content, (chunk_text, chunk_fact_count) in enumerate(chunks_from_llm):
+        for chunk_idx_in_content, (chunk_text, chunk_fact_count) in enumerate(
+            chunks_from_llm
+        ):
             chunk_global_idx = chunk_start_idx + chunk_idx_in_content
 
             for _ in range(chunk_fact_count):
@@ -2090,15 +2311,23 @@ async def extract_facts_from_contents(
                     # mentioned_at is always the event_date (when the conversation/document occurred)
                     extracted_fact = ExtractedFactType(
                         fact_text=fact_from_llm.fact,
-                        fact_type="experience" if fact_from_llm.fact_type == "assistant" else "world",
+                        fact_type=(
+                            "experience"
+                            if fact_from_llm.fact_type == "assistant"
+                            else "world"
+                        ),
                         entities=[e.text for e in (fact_from_llm.entities or [])],
                         # occurred_start/end: from LLM only, leave None if not provided
-                        occurred_start=_parse_datetime(fact_from_llm.occurred_start)
-                        if fact_from_llm.occurred_start
-                        else None,
-                        occurred_end=_parse_datetime(fact_from_llm.occurred_end)
-                        if fact_from_llm.occurred_end
-                        else None,
+                        occurred_start=(
+                            _parse_datetime(fact_from_llm.occurred_start)
+                            if fact_from_llm.occurred_start
+                            else None
+                        ),
+                        occurred_end=(
+                            _parse_datetime(fact_from_llm.occurred_end)
+                            if fact_from_llm.occurred_end
+                            else None
+                        ),
                         causal_relations=_convert_causal_relations(
                             fact_from_llm.causal_relations or [], global_fact_idx
                         ),
@@ -2129,7 +2358,9 @@ async def extract_facts_from_contents(
     return extracted_facts, chunks_metadata, total_usage
 
 
-def _collapse_to_verbatim(facts: list[ExtractedFactType], chunks: list[ChunkMetadata]) -> list[ExtractedFactType]:
+def _collapse_to_verbatim(
+    facts: list[ExtractedFactType], chunks: list[ChunkMetadata]
+) -> list[ExtractedFactType]:
     """
     For verbatim mode: ensure one fact per chunk with the original chunk text preserved.
 
@@ -2166,7 +2397,9 @@ def _parse_datetime(date_str: str):
         return None
 
 
-def _convert_causal_relations(relations_from_llm, fact_start_idx: int) -> list[CausalRelationType]:
+def _convert_causal_relations(
+    relations_from_llm, fact_start_idx: int
+) -> list[CausalRelationType]:
     """
     Convert causal relations from LLM format to ExtractedFact format.
 
@@ -2183,7 +2416,9 @@ def _convert_causal_relations(relations_from_llm, fact_start_idx: int) -> list[C
     return causal_relations
 
 
-def _add_temporal_offsets(facts: list[ExtractedFactType], contents: list[RetainContent]) -> None:
+def _add_temporal_offsets(
+    facts: list[ExtractedFactType], contents: list[RetainContent]
+) -> None:
     """
     Add time offsets to preserve fact ordering across all contents.
 
@@ -2225,7 +2460,11 @@ def _inject_label_tags(facts: list[ExtractedFactType], config) -> None:
     if not tag_group_keys:
         return
     for fact in facts:
-        label_tags = [e for e in fact.entities if ":" in e and e.split(":", 1)[0].lower() in tag_group_keys]
+        label_tags = [
+            e
+            for e in fact.entities
+            if ":" in e and e.split(":", 1)[0].lower() in tag_group_keys
+        ]
         if label_tags:
             existing = set(fact.tags)
             fact.tags = fact.tags + [t for t in label_tags if t not in existing]
