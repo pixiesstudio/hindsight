@@ -528,7 +528,15 @@ def _register_recall(
 
                 recall_result = await memory.recall_async(**recall_kwargs)
 
-                return recall_result.model_dump_json(indent=2)
+                # Compact + null-stripped: the envelope, not the content, was
+                # blowing recalls past the MCP client's payload limit. Measured
+                # over four real responses: only 31-33% of the bytes were
+                # retrieved text; indent=2 put every field AND every single tag
+                # on its own indented line, and unset fields (entities,
+                # metadata, chunk_id, ...) cost ~200B per hit for nothing.
+                # A response that gets offloaded delivers ZERO knowledge, so
+                # shipping fewer bytes of the same facts is strictly better.
+                return recall_result.model_dump_json(exclude_none=True)
             except OperationValidationError as e:
                 logger.warning(f"Recall rejected: {e}")
                 return json.dumps({"error": str(e), "results": []})
@@ -590,7 +598,9 @@ def _register_recall(
 
                 recall_result = await memory.recall_async(**recall_kwargs)
 
-                return recall_result.model_dump()
+                # Same null-stripping as the bank_id variant above, so the two
+                # code paths cannot drift apart in payload size.
+                return recall_result.model_dump(exclude_none=True)
             except OperationValidationError as e:
                 logger.warning(f"Recall rejected: {e}")
                 return {"error": str(e), "results": []}
