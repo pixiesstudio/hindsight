@@ -232,6 +232,19 @@ class LocalSTCrossEncoder(CrossEncoderModel):
                 # Restore original logging level
                 transformers_logger.setLevel(original_level)
 
+        # Normalize weights to float32 BEFORE any intentional cast. When the
+        # reranker loads concurrently with an embedder that requests a target
+        # dtype (jina-embeddings-v5 loads itself in bfloat16),
+        # transformers.modeling_utils.from_pretrained temporarily flips the
+        # GLOBAL torch default dtype (set_default_dtype at modeling_utils
+        # ~L240) — modules the CrossEncoder materializes inside that window
+        # come out bfloat16. Result on CPU: "mixed dtype (CPU): expect
+        # parameter to have scalar type of Float" on the very first predict
+        # (measured 2026-08-13: server broke on the first recall after every
+        # start while a cold, serial load stayed float32). float() is
+        # idempotent for healthy loads and heals a poisoned one.
+        self._model.model.float()
+
         # FP16 inference: convert model weights to half precision.
         # Empirically validated: 27-36% faster on MPS, quality-identical (20/20 overlap).
         if self.fp16 and device != "cpu":
