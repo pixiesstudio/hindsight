@@ -29,6 +29,17 @@ class AnthropicLLM(LLMInterface):
     Handles format conversion between OpenAI-style messages and Anthropic's format.
     """
 
+    #: Appended to the system prompt once, when the model answered a JSON request
+    #: with prose. Real case 2026-09-16: a batch_retain task failed 4x11 attempts
+    #: on identical requests because nothing changed between retries.
+    JSON_ONLY_NUDGE = "Respond with the JSON object only — no prose, no code fences, no explanation."
+
+    #: When ``stop_reason == "max_tokens"`` the text was cut before a full JSON
+    #: object existed (often: empty text, ``json.loads("")``). The budget doubles
+    #: per retry, capped at this factor times the initial budget so a runaway
+    #: prompt costs at most 4x, never unbounded.
+    MAX_TOKENS_ESCALATION_CEILING_FACTOR = 4
+
     def __init__(
         self,
         provider: str,
@@ -173,13 +184,20 @@ class AnthropicLLM(LLMInterface):
             call_params["temperature"] = temperature
 
         last_exception = None
+        # Recovery state for invalid-JSON retries (see JSON_ONLY_NUDGE /
+        # MAX_TOKENS_ESCALATION_CEILING_FACTOR): the budget ceiling derives from
+        # the budget the caller asked for, the nudge is appended at most once.
+        initial_max_tokens: int = call_params["max_tokens"]
+        max_tokens_ceiling = initial_max_tokens * self.MAX_TOKENS_ESCALATION_CEILING_FACTOR
+        json_nudge_applied = False
 
         for attempt in range(max_retries + 1):
+            response: Any = None
+            content = ""
             try:
                 response = await self._client.messages.create(**call_params)
 
                 # Anthropic response content is a list of blocks
-                content = ""
                 for block in response.content:
                     if block.type == "text":
                         content += block.text
@@ -260,14 +278,43 @@ class AnthropicLLM(LLMInterface):
 
             except json.JSONDecodeError as e:
                 last_exception = e
+                # `response` and `content` are bound: the parse runs after both.
+                stop_reason = getattr(response, "stop_reason", None)
+                usage = getattr(response, "usage", None)
+                failed_output_tokens = (usage.output_tokens or 0) if usage else 0
+                text_head = content[:200]
+                logger.warning(
+                    "Anthropic returned invalid JSON (attempt %d/%d, stop_reason=%s, "
+                    "output_tokens=%s, max_tokens=%s, text_head=%r)",
+                    attempt + 1,
+                    max_retries + 1,
+                    stop_reason,
+                    failed_output_tokens,
+                    call_params["max_tokens"],
+                    text_head,
+                )
                 if attempt < max_retries:
-                    logger.warning("Anthropic returned invalid JSON, retrying...")
+                    if stop_reason == "max_tokens":
+                        # Cut off before a complete object: more budget, bounded.
+                        call_params["max_tokens"] = min(call_params["max_tokens"] * 2, max_tokens_ceiling)
+                    elif content.strip() and not json_nudge_applied:
+                        # Prose instead of JSON: ask once, explicitly, for JSON only.
+                        existing_system = call_params.get("system")
+                        call_params["system"] = (
+                            f"{existing_system}\n\n{self.JSON_ONLY_NUDGE}" if existing_system else self.JSON_ONLY_NUDGE
+                        )
+                        json_nudge_applied = True
                     backoff = min(initial_backoff * (2**attempt), max_backoff)
                     await asyncio.sleep(backoff)
                     continue
                 else:
-                    logger.error(f"Anthropic returned invalid JSON after {max_retries + 1} attempts")
-                    raise
+                    message = (
+                        f"Anthropic returned invalid JSON after {max_retries + 1} attempts "
+                        f"(stop_reason={stop_reason}, output_tokens={failed_output_tokens}, "
+                        f"text_head={text_head!r})"
+                    )
+                    logger.error(message)
+                    raise ValueError(message) from e
 
             except (APIConnectionError, RateLimitError, APIStatusError) as e:
                 # Fast fail on 401/403
