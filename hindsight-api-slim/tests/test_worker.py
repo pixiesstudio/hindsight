@@ -1445,20 +1445,86 @@ class TestMarkFailedParentPropagation:
         operation_type: str,
         status: str,
         result_metadata: dict | None = None,
+        error_message: str | None = None,
     ) -> None:
         meta_json = json.dumps(result_metadata if result_metadata is not None else {})
         await pool.execute(
             """
             INSERT INTO async_operations
-                (operation_id, bank_id, operation_type, status, result_metadata)
-            VALUES ($1, $2, $3, $4, $5::jsonb)
+                (operation_id, bank_id, operation_type, status, result_metadata, error_message)
+            VALUES ($1, $2, $3, $4, $5::jsonb, $6)
             """,
             op_id,
             bank_id,
             operation_type,
             status,
             meta_json,
+            error_message,
         )
+
+    @pytest.mark.asyncio
+    async def test_mark_failed_writes_the_failed_childs_error_into_the_parent(self, pool, clean_operations):
+        """GET on the parent alone must say WHICH sub-batch failed and WHY — not the
+        generic "One or more sub-batches failed" (measured 2026-10-02, op caaef926:
+        the cause was visible on the child row alone)."""
+        from hindsight_api.worker import WorkerPoller
+
+        bank_id = f"test-worker-{uuid.uuid4().hex[:8]}"
+        await _ensure_bank(pool, bank_id)
+        parent_id, child1_id, child2_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+        await self._insert_op(pool, op_id=parent_id, bank_id=bank_id, operation_type="batch_retain", status="pending")
+        await self._insert_op(
+            pool,
+            op_id=child1_id,
+            bank_id=bank_id,
+            operation_type="retain",
+            status="completed",
+            result_metadata={"parent_operation_id": str(parent_id), "sub_batch_index": 1, "total_sub_batches": 2},
+        )
+        await self._insert_op(
+            pool,
+            op_id=child2_id,
+            bank_id=bank_id,
+            operation_type="retain",
+            status="processing",
+            result_metadata={"parent_operation_id": str(parent_id), "sub_batch_index": 2, "total_sub_batches": 2},
+        )
+
+        poller = WorkerPoller(pool=pool, worker_id="test-worker-1", executor=lambda x: None)
+        await poller._mark_failed(str(child2_id), "DB constraint violation", schema=None)
+
+        parent_row = await pool.fetchrow(
+            "SELECT status, error_message FROM async_operations WHERE operation_id = $1", parent_id
+        )
+        assert (parent_row["status"], parent_row["error_message"]) == (
+            "failed",
+            f"sub-batch 2/2 ({child2_id}) failed: DB constraint violation",
+        )
+
+    @pytest.mark.asyncio
+    async def test_mark_completed_clears_retry_error_message(self, pool, clean_operations):
+        """_schedule_retry leaves the failure text on the row; the attempt that finally
+        succeeds must clear it. Measured 2026-10-02 (op caaef926, child ac8b9970):
+        "completed" WITH "Anthropic returned invalid JSON after 11 attempts"."""
+        from hindsight_api.worker import WorkerPoller
+
+        bank_id = f"test-worker-{uuid.uuid4().hex[:8]}"
+        await _ensure_bank(pool, bank_id)
+        op_id = uuid.uuid4()
+        await self._insert_op(
+            pool,
+            op_id=op_id,
+            bank_id=bank_id,
+            operation_type="retain",
+            status="processing",
+            error_message="Anthropic returned invalid JSON after 11 attempts",
+        )
+
+        poller = WorkerPoller(pool=pool, worker_id="test-worker-1", executor=lambda x: None)
+        await poller._mark_completed(str(op_id), schema=None)
+
+        row = await pool.fetchrow("SELECT status, error_message FROM async_operations WHERE operation_id = $1", op_id)
+        assert (row["status"], row["error_message"]) == ("completed", None)
 
     @pytest.mark.asyncio
     async def test_mark_failed_finalises_parent_when_last_sibling_fails(self, pool, clean_operations):

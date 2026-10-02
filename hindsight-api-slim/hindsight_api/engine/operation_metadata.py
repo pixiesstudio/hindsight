@@ -67,3 +67,24 @@ class RefreshMentalModelMetadata:
     def to_dict(self) -> dict[str, Any]:
         """Convert to dict for JSON serialization."""
         return asdict(self)
+
+
+def describe_failed_children(children: list[dict[str, Any]]) -> str:
+    """One clause per failed sub-batch for the parent's ``error_message``.
+
+    Format: ``sub-batch 2/2 (<child operation_id>) failed: <child error_message>``,
+    clauses joined by ``; ``. Each entry needs ``operation_id``, ``error_message``
+    and the parsed ``result_metadata`` (``BatchRetainChildMetadata`` fields).
+    Shared by the engine and the poller, which both finalise parents. Before
+    2026-10-02 the parent only said "One or more sub-batches failed"; the cause
+    (op caaef926: "Anthropic returned invalid JSON after 11 attempts") was
+    visible on the child row alone.
+    """
+    clauses = []
+    for child in children:
+        metadata = child.get("result_metadata") or {}
+        clauses.append(
+            f"sub-batch {metadata.get('sub_batch_index', '?')}/{metadata.get('total_sub_batches', '?')} "
+            f"({child['operation_id']}) failed: {child.get('error_message') or 'no error_message'}"
+        )
+    return "; ".join(clauses)

@@ -14,6 +14,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+from ..engine.operation_metadata import describe_failed_children
 from .exceptions import RetryTaskAt
 
 if TYPE_CHECKING:
@@ -290,12 +291,20 @@ class WorkerPoller:
                 return result
 
     async def _mark_completed(self, operation_id: str, schema: str | None):
-        """Mark a task as completed."""
+        """Mark a task as completed.
+
+        Clears ``error_message``: ``_schedule_retry`` writes the failure text when it
+        re-queues a task, and the attempt that finally succeeds must not leave it
+        behind — measured 2026-10-02 (op caaef926, child ac8b9970): "completed"
+        with "Anthropic returned invalid JSON after 11 attempts", every reader
+        took the stored retain for failed. Same rule as the engine's
+        ``_mark_operation_completed``.
+        """
         table = fq_table("async_operations", schema)
         await self._pool.execute(
             f"""
             UPDATE {table}
-            SET status = 'completed', completed_at = now(), updated_at = now()
+            SET status = 'completed', error_message = NULL, completed_at = now(), updated_at = now()
             WHERE operation_id = $1
             """,
             operation_id,
@@ -363,7 +372,7 @@ class WorkerPoller:
             # Check whether all siblings are done
             siblings = await conn.fetch(
                 f"""
-                SELECT status FROM {table}
+                SELECT operation_id, status, error_message, result_metadata FROM {table}
                 WHERE bank_id = $1
                   AND result_metadata::jsonb @> $2::jsonb
                 """,
@@ -373,7 +382,21 @@ class WorkerPoller:
             if not siblings or not all(s["status"] in ("completed", "failed") for s in siblings):
                 return
 
-            any_failed = any(s["status"] == "failed" for s in siblings)
+            # The parent carries WHICH sub-batch failed and WHY (child error text).
+            failed_children = [
+                {
+                    "operation_id": str(s["operation_id"]),
+                    "error_message": s["error_message"],
+                    "result_metadata": (
+                        json.loads(s["result_metadata"])
+                        if isinstance(s["result_metadata"], str)
+                        else (s["result_metadata"] or {})
+                    ),
+                }
+                for s in siblings
+                if s["status"] == "failed"
+            ]
+            any_failed = bool(failed_children)
             if any_failed:
                 await conn.execute(
                     f"""
@@ -382,7 +405,7 @@ class WorkerPoller:
                     WHERE operation_id = $1
                     """,
                     uuid.UUID(parent_operation_id),
-                    "One or more sub-batches failed",
+                    describe_failed_children(failed_children),
                 )
             else:
                 await conn.execute(

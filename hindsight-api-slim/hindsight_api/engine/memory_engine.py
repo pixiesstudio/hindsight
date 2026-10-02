@@ -35,6 +35,7 @@ from .operation_metadata import (
     ConsolidationMetadata,
     RefreshMentalModelMetadata,
     RetainMetadata,
+    describe_failed_children,
 )
 
 # Context variable for current schema (async-safe, per-task isolation)
@@ -1464,6 +1465,11 @@ class MemoryEngine(MemoryEngineInterface):
     async def _mark_operation_completed(self, operation_id: str):
         """Helper to mark an operation as completed in the database.
 
+        Clears ``error_message``: the poller writes the failure text when it re-queues
+        an operation (``_schedule_retry``), and a later successful attempt must not
+        leave it behind — measured 2026-10-02, op caaef926 child ac8b9970 was
+        "completed" with "Anthropic returned invalid JSON after 11 attempts" and
+        every reader took the stored retain for failed.
         Also checks if this is a child operation and updates the parent if all siblings are done.
         Uses a single transaction to avoid race conditions when multiple children complete simultaneously.
         """
@@ -1475,7 +1481,7 @@ class MemoryEngine(MemoryEngineInterface):
                     row = await conn.fetchrow(
                         f"""
                         UPDATE {fq_table("async_operations")}
-                        SET status = 'completed', updated_at = NOW(), completed_at = NOW()
+                        SET status = 'completed', error_message = NULL, updated_at = NOW(), completed_at = NOW()
                         WHERE operation_id = $1
                         RETURNING operation_id
                         """,
@@ -1522,7 +1528,7 @@ class MemoryEngine(MemoryEngineInterface):
                     row = await conn.fetchrow(
                         f"""
                         UPDATE {fq_table("async_operations")}
-                        SET status = 'completed', updated_at = NOW(), completed_at = NOW()
+                        SET status = 'completed', error_message = NULL, updated_at = NOW(), completed_at = NOW()
                         WHERE operation_id = $1
                         RETURNING operation_id
                         """,
@@ -1622,7 +1628,7 @@ class MemoryEngine(MemoryEngineInterface):
             # This query runs in the same transaction, so it sees the current child's updated status
             siblings = await conn.fetch(
                 f"""
-                SELECT status
+                SELECT operation_id, status, error_message, result_metadata
                 FROM {fq_table("async_operations")}
                 WHERE bank_id = $1
                 AND result_metadata::jsonb @> $2::jsonb
@@ -1646,7 +1652,16 @@ class MemoryEngine(MemoryEngineInterface):
             # All siblings are done - update parent status
             if any_failed:
                 new_status = "failed"
-                # Set parent error message to indicate child failure
+                # The parent carries WHICH sub-batch failed and WHY (child error text).
+                failed_children = [
+                    {
+                        "operation_id": str(sib["operation_id"]),
+                        "error_message": sib["error_message"],
+                        "result_metadata": json.loads(sib["result_metadata"]) if sib["result_metadata"] else {},
+                    }
+                    for sib in siblings
+                    if sib["status"] == "failed"
+                ]
                 await conn.execute(
                     f"""
                     UPDATE {fq_table("async_operations")}
@@ -1655,7 +1670,7 @@ class MemoryEngine(MemoryEngineInterface):
                     """,
                     uuid.UUID(parent_operation_id),
                     new_status,
-                    "One or more sub-batches failed",
+                    describe_failed_children(failed_children),
                 )
             elif all_completed:
                 new_status = "completed"
@@ -8052,6 +8067,8 @@ class MemoryEngine(MemoryEngineInterface):
 
                     # Build child operations list and check if parent status needs updating
                     child_statuses = []
+                    failed_children = []
+                    api_error_message = row["error_message"]
                     all_done = True
                     any_failed = False
                     all_completed = True
@@ -8080,25 +8097,37 @@ class MemoryEngine(MemoryEngineInterface):
                             all_done = False
                         if child_status == "failed":
                             any_failed = True
+                            failed_children.append(
+                                {
+                                    "operation_id": str(child_row["operation_id"]),
+                                    "error_message": child_row["error_message"],
+                                    "result_metadata": child_metadata,
+                                }
+                            )
                         if child_status != "completed":
                             all_completed = False
 
-                    # Self-healing: if parent status is out of sync with children, update it
+                    # Self-healing: if parent status is out of sync with children, update it.
+                    # A healed failure carries the failed children's error text, exactly
+                    # like the regular path in _maybe_update_parent_operation.
                     if all_done and api_status == "pending":
                         correct_status = "failed" if any_failed else "completed"
+                        healed_error = describe_failed_children(failed_children) if any_failed else None
                         logger.warning(
                             f"Parent operation {operation_id} status out of sync (DB: pending, should be: {correct_status}). Fixing."
                         )
                         await conn.execute(
                             f"""
                             UPDATE {fq_table("async_operations")}
-                            SET status = $2, updated_at = NOW(), completed_at = NOW()
+                            SET status = $2, error_message = $3, updated_at = NOW(), completed_at = NOW()
                             WHERE operation_id = $1
                             """,
                             op_uuid,
                             correct_status,
+                            healed_error,
                         )
                         api_status = correct_status
+                        api_error_message = healed_error
 
                     return {
                         "operation_id": operation_id,
@@ -8115,7 +8144,7 @@ class MemoryEngine(MemoryEngineInterface):
                             if row["completed_at"]
                             else None
                         ),
-                        "error_message": row["error_message"],
+                        "error_message": api_error_message,
                         "result_metadata": result_metadata,
                         "child_operations": child_statuses,
                     }
