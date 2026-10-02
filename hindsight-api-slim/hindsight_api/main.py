@@ -243,6 +243,7 @@ def main():
             base_path=config.base_path,
             log_level=args.log_level,
             log_format=config.log_format,
+            llm_invalid_json_dump_dir=config.llm_invalid_json_dump_dir,
             mcp_enabled=config.mcp_enabled,
             mcp_enabled_tools=config.mcp_enabled_tools,
             enable_bank_config_api=config.enable_bank_config_api,

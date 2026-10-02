@@ -246,6 +246,7 @@ ENV_PORT = "HINDSIGHT_API_PORT"
 ENV_BASE_PATH = "HINDSIGHT_API_BASE_PATH"
 ENV_LOG_LEVEL = "HINDSIGHT_API_LOG_LEVEL"
 ENV_LOG_FORMAT = "HINDSIGHT_API_LOG_FORMAT"
+ENV_LLM_INVALID_JSON_DUMP_DIR = "HINDSIGHT_API_LLM_INVALID_JSON_DUMP_DIR"
 ENV_WORKERS = "HINDSIGHT_API_WORKERS"
 ENV_MCP_ENABLED = "HINDSIGHT_API_MCP_ENABLED"
 ENV_MCP_ENABLED_TOOLS = "HINDSIGHT_API_MCP_ENABLED_TOOLS"
@@ -471,6 +472,9 @@ DEFAULT_PORT = 8888
 DEFAULT_BASE_PATH = ""  # Empty string = root path
 DEFAULT_LOG_LEVEL = "info"
 DEFAULT_LOG_FORMAT = "text"  # Options: "text", "json"
+# Full dumps of LLM responses that never parsed as JSON (AnthropicLLM). Lives next
+# to hindsight.log (start.sh LOG_DIR) so one directory holds all diagnostics.
+DEFAULT_LLM_INVALID_JSON_DUMP_DIR = "~/.local/share/hindsight/logs/llm-invalid-json"
 DEFAULT_WORKERS = 1
 DEFAULT_MCP_ENABLED = True
 DEFAULT_MCP_ENABLED_TOOLS: list[str] | None = None  # None = all tools enabled
@@ -798,6 +802,7 @@ class HindsightConfig:
     base_path: str
     log_level: str
     log_format: str
+    llm_invalid_json_dump_dir: str
     mcp_enabled: bool
     mcp_enabled_tools: list[str] | None  # None = all tools; explicit list = allowlist
     enable_bank_config_api: bool
@@ -1379,6 +1384,7 @@ class HindsightConfig:
             base_path=os.getenv(ENV_BASE_PATH, DEFAULT_BASE_PATH),
             log_level=os.getenv(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL),
             log_format=os.getenv(ENV_LOG_FORMAT, DEFAULT_LOG_FORMAT).lower(),
+            llm_invalid_json_dump_dir=os.getenv(ENV_LLM_INVALID_JSON_DUMP_DIR, DEFAULT_LLM_INVALID_JSON_DUMP_DIR),
             mcp_enabled=os.getenv(ENV_MCP_ENABLED, str(DEFAULT_MCP_ENABLED)).lower()
             == "true",
             mcp_enabled_tools=(

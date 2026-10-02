@@ -11,7 +11,11 @@ This provider enables using Claude models from Anthropic with support for:
 import asyncio
 import json
 import logging
+import re
 import time
+import uuid
+from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from hindsight_api.engine.llm_interface import LLMInterface, OutputTooLongError
@@ -40,6 +44,33 @@ class AnthropicLLM(LLMInterface):
     #: prompt costs at most 4x, never unbounded.
     MAX_TOKENS_ESCALATION_CEILING_FACTOR = 4
 
+    #: Characters of the rejected text that go into the log line. Measured
+    #: 2026-10-02: 161 invalid-JSON warnings, every head looked like valid fenced
+    #: JSON — the head identifies the response, the dump file explains it.
+    INVALID_JSON_TEXT_HEAD_CHARS = 200
+
+    #: The WHOLE text wrapped in one code fence, anchored at both ends. Anchoring
+    #: at the end matters: a ``` INSIDE a string value (facts about markdown,
+    #: hooks, heredocs) must not end the object early — ``split("```")`` did.
+    _JSON_FENCE_RE = re.compile(r"^\s*```[A-Za-z]*[ \t]*\n?(.*?)\n?[ \t]*```\s*$", re.DOTALL)
+
+    #: Characters that may legally follow a closing quote in JSON. A quote followed
+    #: by anything else did not close the string — it is text the model forgot to
+    #: escape. Measured 2026-10-02 (dumps attempt1..5of11 of op 5a38eb75): Haiku
+    #: closes a German „…“ quotation with a bare ASCII quote inside the value, the
+    #: string ends early and every one of 11 retries fails at the same character.
+    _JSON_AFTER_STRING = ",:}]"
+
+    #: Error prefixes the parser emits when a string ended early and the next
+    #: token is plain text. Anything else is not a stray quote and is not repaired.
+    _STRAY_QUOTE_ERRORS = ("Expecting ',' delimiter", "Expecting ':' delimiter")
+
+    #: Emitted when a string ended early right before a comma: ``„…", weil`` —
+    #: the parser accepts the comma and then misses the quote of the next key.
+    #: Measured 2026-10-02 (dumps attempt1..4of11, 16:49): 4 of 4 attempts at the
+    #: same character. A real ``",`` is always followed by ``"``; this one is not.
+    _STRAY_QUOTE_BEFORE_COMMA_ERROR = "Expecting property name enclosed in double quotes"
+
     def __init__(
         self,
         provider: str,
@@ -48,6 +79,7 @@ class AnthropicLLM(LLMInterface):
         model: str,
         reasoning_effort: str = "low",
         timeout: float = 300.0,
+        invalid_json_dump_dir: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -60,9 +92,13 @@ class AnthropicLLM(LLMInterface):
             model: Model name (e.g., "claude-sonnet-4-20250514").
             reasoning_effort: Reasoning effort level (not used by Anthropic).
             timeout: Request timeout in seconds.
+            invalid_json_dump_dir: Directory for full dumps of responses that never
+                parsed as JSON. None = ``HINDSIGHT_API_LLM_INVALID_JSON_DUMP_DIR``
+                from the global config, resolved lazily at the first dump.
             **kwargs: Additional provider-specific parameters.
         """
         super().__init__(provider, api_key, base_url, model, reasoning_effort, **kwargs)
+        self._invalid_json_dump_dir = invalid_json_dump_dir
 
         if not self.api_key:
             raise ValueError("API key is required for Anthropic provider")
@@ -81,6 +117,130 @@ class AnthropicLLM(LLMInterface):
             logger.info(f"Anthropic client initialized for model: {self.model}")
         except ImportError as e:
             raise RuntimeError("Anthropic SDK not installed. Run: uv add anthropic or pip install anthropic") from e
+
+    @classmethod
+    def _extract_json(cls, content: str) -> Any:
+        """Parse the model's text as JSON, tolerating the wrappers seen in production.
+
+        Candidates in order, first one that parses wins:
+          1. the raw text — ``strict=False`` accepts literal control characters
+             (a newline the model did not escape) inside string values;
+          2. the text inside ONE surrounding code fence (``_JSON_FENCE_RE``);
+          3. the slice from the first ``{`` to the last ``}`` — prose before or
+             after the object, or a fence the model never closed.
+        If every candidate fails, the error that got FURTHEST is raised: for a
+        fenced response the raw text always fails at char 0 (the fence), the
+        inner text fails at the real defect. ``error.doc`` is the candidate
+        the position refers to.
+        """
+        candidates = [content]
+        fenced = cls._JSON_FENCE_RE.match(content)
+        if fenced is not None:
+            candidates.append(fenced.group(1))
+        first_brace, last_brace = content.find("{"), content.rfind("}")
+        if first_brace != -1 and last_brace > first_brace:
+            candidates.append(content[first_brace : last_brace + 1])
+
+        deepest_error: json.JSONDecodeError | None = None
+        for candidate in candidates:
+            try:
+                return json.loads(candidate, strict=False)
+            except json.JSONDecodeError as e:
+                if deepest_error is None or e.pos > deepest_error.pos:
+                    deepest_error = e
+        if deepest_error is None:  # unreachable: candidates[0] is the raw text and did not return
+            raise json.JSONDecodeError("no JSON candidate in response", content, 0)
+        repaired = cls._repair_unescaped_quotes(deepest_error.doc)
+        if repaired is not None:
+            text, escaped = repaired
+            logger.warning("Anthropic JSON parsed only after escaping %d stray quote(s) inside string values", escaped)
+            return json.loads(text, strict=False)
+        raise deepest_error
+
+    @classmethod
+    def _repair_unescaped_quotes(cls, text: str) -> tuple[str, int] | None:
+        """Escape ASCII quotes that end a string although no structural character follows.
+
+        Driven by the parser: the last quote before the error position closed the
+        string early. Two provable cases are escaped, everything else is left alone
+        and ``None`` is returned — fail-closed, the original error stands:
+          * ``_STRAY_QUOTE_ERRORS``: the first non-blank character after the quote
+            is not in ``_JSON_AFTER_STRING``, so the quote can not be structural;
+          * ``_STRAY_QUOTE_BEFORE_COMMA_ERROR``: only a comma separates the quote
+            from the error, and a real ``",`` would be followed by a quote.
+        A missing comma or a key without its opening quote is neither, and stays an
+        error. Bounded by the number of quotes: each round escapes one.
+        Returns the repaired text and the number of escaped quotes.
+        """
+        repaired, escaped = text, 0
+        for _ in range(text.count('"')):
+            try:
+                json.loads(repaired, strict=False)
+                return (repaired, escaped) if escaped else None
+            except json.JSONDecodeError as e:
+                quote = repaired.rfind('"', 0, e.pos)
+                if quote == -1:
+                    return None
+                if e.msg.startswith(cls._STRAY_QUOTE_ERRORS):
+                    following = repaired[quote + 1 :].lstrip()
+                    stray = bool(following) and following[0] not in cls._JSON_AFTER_STRING
+                elif e.msg.startswith(cls._STRAY_QUOTE_BEFORE_COMMA_ERROR):
+                    # e.pos is the offending token; only a comma may sit between quote and token.
+                    stray = repaired[quote + 1 : e.pos].strip() == ","
+                else:
+                    return None
+                if not stray:
+                    return None
+                repaired = f"{repaired[:quote]}\\{repaired[quote:]}"
+                escaped += 1
+        return None
+
+    @staticmethod
+    def _text_at_error(error: json.JSONDecodeError) -> str:
+        """The failing candidate around the error position — the defect itself, not the head."""
+        half = AnthropicLLM.INVALID_JSON_TEXT_HEAD_CHARS // 2
+        return error.doc[max(0, error.pos - half) : error.pos + half]
+
+    def _dump_invalid_json(
+        self,
+        content: str,
+        *,
+        error: json.JSONDecodeError,
+        stop_reason: Any,
+        output_tokens: int,
+        attempt: int,
+        max_attempts: int,
+    ) -> Path | None:
+        """Write the FULL rejected response to disk and return the file path.
+
+        Called for EVERY failed attempt, not only the last: measured 2026-10-02
+        after the first fix, a retain needed 5 attempts, the 4 rejected responses
+        were gone with the retry and the log head (``INVALID_JSON_TEXT_HEAD_CHARS``
+        chars) looked like valid JSON — the cause stayed invisible. Measured
+        volume: 161 rejections/day at ~10 KB each, ~1.6 MB/day; no rotation here,
+        the directory is evidence and is cleaned by hand.
+        Diagnostics only: an unwritable directory is logged, never raised, so it
+        can not turn a parse failure into a different failure.
+        """
+        try:
+            if self._invalid_json_dump_dir is None:
+                from hindsight_api.config import get_config
+
+                self._invalid_json_dump_dir = get_config().llm_invalid_json_dump_dir
+            directory = Path(self._invalid_json_dump_dir).expanduser()
+            directory.mkdir(parents=True, exist_ok=True)
+            stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%fZ")
+            path = directory / f"{stamp}-attempt{attempt}of{max_attempts}-{uuid.uuid4().hex[:8]}.txt"
+            header = (
+                f"# model={self.model}\n# stop_reason={stop_reason}\n# output_tokens={output_tokens}\n"
+                f"# attempt={attempt}/{max_attempts}\n# chars={len(content)}\n# error={error}\n"
+                f"# text_at_error={self._text_at_error(error)!r}\n\n"
+            )
+            path.write_text(header + content, encoding="utf-8")
+            return path
+        except OSError as e:
+            logger.error("Could not dump invalid JSON response (%d chars): %s", len(content), e)
+            return None
 
     async def verify_connection(self) -> None:
         """
@@ -203,18 +363,7 @@ class AnthropicLLM(LLMInterface):
                         content += block.text
 
                 if response_format is not None:
-                    # Models may wrap JSON in markdown code blocks
-                    clean_content = content
-                    if "```json" in content:
-                        clean_content = content.split("```json")[1].split("```")[0].strip()
-                    elif "```" in content:
-                        clean_content = content.split("```")[1].split("```")[0].strip()
-
-                    try:
-                        json_data = json.loads(clean_content)
-                    except json.JSONDecodeError:
-                        # Fallback to parsing raw content if markdown stripping failed
-                        json_data = json.loads(content)
+                    json_data = self._extract_json(content)
 
                     if skip_validation:
                         result = json_data
@@ -282,16 +431,27 @@ class AnthropicLLM(LLMInterface):
                 stop_reason = getattr(response, "stop_reason", None)
                 usage = getattr(response, "usage", None)
                 failed_output_tokens = (usage.output_tokens or 0) if usage else 0
-                text_head = content[:200]
+                text_head = content[: self.INVALID_JSON_TEXT_HEAD_CHARS]
+                dump_path = self._dump_invalid_json(
+                    content,
+                    error=e,
+                    stop_reason=stop_reason,
+                    output_tokens=failed_output_tokens,
+                    attempt=attempt + 1,
+                    max_attempts=max_retries + 1,
+                )
                 logger.warning(
-                    "Anthropic returned invalid JSON (attempt %d/%d, stop_reason=%s, "
-                    "output_tokens=%s, max_tokens=%s, text_head=%r)",
+                    "Anthropic returned invalid JSON (attempt %d/%d, stop_reason=%s, output_tokens=%s, "
+                    "max_tokens=%s, error=%s, text_at_error=%r, text_head=%r, full response: %s)",
                     attempt + 1,
                     max_retries + 1,
                     stop_reason,
                     failed_output_tokens,
                     call_params["max_tokens"],
+                    e,
+                    self._text_at_error(e),
                     text_head,
+                    dump_path,
                 )
                 if attempt < max_retries:
                     if stop_reason == "max_tokens":
@@ -311,8 +471,10 @@ class AnthropicLLM(LLMInterface):
                     message = (
                         f"Anthropic returned invalid JSON after {max_retries + 1} attempts "
                         f"(stop_reason={stop_reason}, output_tokens={failed_output_tokens}, "
-                        f"text_head={text_head!r})"
+                        f"error={e}, text_head={text_head!r})"
                     )
+                    if dump_path is not None:
+                        message += f"; full response: {dump_path}"
                     logger.error(message)
                     raise ValueError(message) from e
 
