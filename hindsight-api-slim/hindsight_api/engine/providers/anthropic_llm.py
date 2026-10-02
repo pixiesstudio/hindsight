@@ -71,6 +71,20 @@ class AnthropicLLM(LLMInterface):
     #: same character. A real ``",`` is always followed by ``"``; this one is not.
     _STRAY_QUOTE_BEFORE_COMMA_ERROR = "Expecting property name enclosed in double quotes"
 
+    #: Dump files kept in the dump directory; older ones are deleted after each write.
+    #: Both sides measured 2026-10-02. KEPT: the worst real incident is one retain
+    #: burning its 11 attempts, several retains in parallel — far below 1000, so a
+    #: running incident is never truncated. DELETED: 1000 files at the measured mean
+    #: of 7.6 KB (17 real dumps, 2.8-10.4 KB) is ~7.4 MB, and at the measured peak of
+    #: 161 rejections/day that is ~6 days of evidence — the same order as the 20 MB /
+    #: ~10 days of hindsight.log (start.sh). Fail-safe direction: the OLDEST evidence
+    #: is lost, never the newest, and no retain data — only diagnostics.
+    INVALID_JSON_DUMP_KEEP = 1000
+
+    #: Matches only this class's own dump files (``<stamp>-attemptNofM-<id>.txt``).
+    #: Rotation deletes, so it must never see a foreign file in a shared directory.
+    _INVALID_JSON_DUMP_GLOB = "*-attempt*of*-*.txt"
+
     def __init__(
         self,
         provider: str,
@@ -195,6 +209,19 @@ class AnthropicLLM(LLMInterface):
                 escaped += 1
         return None
 
+    @classmethod
+    def _rotate_invalid_json_dumps(cls, directory: Path) -> None:
+        """Delete this class's own dump files beyond ``INVALID_JSON_DUMP_KEEP``.
+
+        The names start with a UTC timestamp, so sorting them is chronological and
+        the tail of the sorted list is the newest. Only files matching
+        ``_INVALID_JSON_DUMP_GLOB`` are considered — the directory sits next to
+        hindsight.log and may hold anything else.
+        """
+        dumps = sorted(directory.glob(cls._INVALID_JSON_DUMP_GLOB))
+        for stale in dumps[: max(0, len(dumps) - cls.INVALID_JSON_DUMP_KEEP)]:
+            stale.unlink(missing_ok=True)
+
     @staticmethod
     def _text_at_error(error: json.JSONDecodeError) -> str:
         """The failing candidate around the error position — the defect itself, not the head."""
@@ -217,8 +244,8 @@ class AnthropicLLM(LLMInterface):
         after the first fix, a retain needed 5 attempts, the 4 rejected responses
         were gone with the retry and the log head (``INVALID_JSON_TEXT_HEAD_CHARS``
         chars) looked like valid JSON — the cause stayed invisible. Measured
-        volume: 161 rejections/day at ~10 KB each, ~1.6 MB/day; no rotation here,
-        the directory is evidence and is cleaned by hand.
+        volume: 161 rejections/day at a mean of 7.6 KB, ~1.2 MB/day; bounded by
+        ``_rotate_invalid_json_dumps`` after every write.
         Diagnostics only: an unwritable directory is logged, never raised, so it
         can not turn a parse failure into a different failure.
         """
@@ -237,6 +264,7 @@ class AnthropicLLM(LLMInterface):
                 f"# text_at_error={self._text_at_error(error)!r}\n\n"
             )
             path.write_text(header + content, encoding="utf-8")
+            self._rotate_invalid_json_dumps(directory)
             return path
         except OSError as e:
             logger.error("Could not dump invalid JSON response (%d chars): %s", len(content), e)

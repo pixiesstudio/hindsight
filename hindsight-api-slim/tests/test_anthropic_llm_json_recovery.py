@@ -275,6 +275,66 @@ async def test_every_failed_attempt_is_dumped_even_when_a_retry_succeeds(tmp_pat
     assert dumps[0].read_text(encoding="utf-8").endswith(broken)
 
 
+@pytest.mark.parametrize(
+    ("existing", "keep", "expected_kept"),
+    [
+        pytest.param(5, 3, 3, id="over-the-limit-keeps-the-newest"),
+        pytest.param(3, 3, 3, id="exactly-at-the-limit-deletes-nothing"),
+        pytest.param(2, 3, 2, id="under-the-limit-deletes-nothing"),
+    ],
+)
+def test_dump_rotation_keeps_the_newest_files_only(
+    existing: int, keep: int, expected_kept: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The dump directory must not grow without bound: measured 2026-10-02, 161
+    rejected attempts in one day at ~7.6 KB each. The timestamp prefix makes the
+    file names sort chronologically, so the newest are the ones to keep."""
+    monkeypatch.setattr(AnthropicLLM, "INVALID_JSON_DUMP_KEEP", keep)
+    names = [f"202610{day:02d}T120000000000Z-attempt1of11-{day:08x}.txt" for day in range(1, existing + 1)]
+    for name in names:
+        (tmp_path / name).write_text("dump", encoding="utf-8")
+
+    AnthropicLLM._rotate_invalid_json_dumps(tmp_path)
+
+    assert sorted(p.name for p in tmp_path.iterdir()) == names[existing - expected_kept :]
+
+
+def test_dump_rotation_never_touches_foreign_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Rotation deletes evidence, so it must only ever delete its OWN files — the
+    directory sits next to hindsight.log and may hold anything else."""
+    monkeypatch.setattr(AnthropicLLM, "INVALID_JSON_DUMP_KEEP", 1)
+    foreign = ["hindsight.log", "20261002T120000000000Z-notes.txt", "README.md"]
+    own = ["20261001T120000000000Z-attempt1of11-aaaaaaaa.txt", "20261002T120000000000Z-attempt2of11-bbbbbbbb.txt"]
+    for name in foreign + own:
+        (tmp_path / name).write_text("x", encoding="utf-8")
+
+    AnthropicLLM._rotate_invalid_json_dumps(tmp_path)
+
+    assert sorted(p.name for p in tmp_path.iterdir()) == sorted([*foreign, own[1]])
+
+
+@pytest.mark.asyncio
+async def test_dumping_a_rejected_response_rotates_the_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Rotation is wired into the dump path, not just available as a helper."""
+    monkeypatch.setattr(AnthropicLLM, "INVALID_JSON_DUMP_KEEP", 1)
+    broken = '{"ok": true "note": "x"}'
+    llm, create = _llm([_response(broken, "end_turn"), _response(broken, "end_turn")], dump_dir=tmp_path)
+
+    with pytest.raises(ValueError, match=r"invalid JSON after 2 attempts"):
+        await llm.call(
+            messages=[{"role": "user", "content": "extract"}],
+            response_format=_Note,
+            max_retries=1,
+            initial_backoff=0.0,
+        )
+
+    assert create.call_count == 2
+    dumps = sorted(tmp_path.iterdir())
+    assert [p.name.split("-")[1] for p in dumps] == ["attempt2of2"]
+
+
 # Defects the repair must NOT touch: escaping the quote before the error would turn
 # them into a different, "valid" object. The original parser error has to surface.
 _UNREPAIRABLE = [
