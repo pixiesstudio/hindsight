@@ -378,7 +378,10 @@ DEFAULT_LLM_PROVIDER = "openai"
 # Provider-specific default models
 PROVIDER_DEFAULT_MODELS = {
     "openai": "gpt-4o-mini",
-    "anthropic": "claude-haiku-4-5-20251001",
+    # Haiku 5.5 since 2026-10-22: $0.10/$0.50 per MTok against 4.5's $1.00/$5.00
+    # for prompts up to 100K tokens — a tenth, at no change in method. The API
+    # carries it undated (checked against /v1/models); there is no dated variant.
+    "anthropic": "claude-haiku-5-5",
     "gemini": "gemini-2.5-flash",
     "groq": "openai/gpt-oss-120b",
     "minimax": "MiniMax-M2.7",
