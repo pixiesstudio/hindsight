@@ -24,6 +24,20 @@ from hindsight_api.metrics import get_metrics_collector
 
 logger = logging.getLogger(__name__)
 
+#: Model families that reject `temperature` outright: 400 invalid_request_error,
+#: "`temperature` is deprecated for this model." Measured 2026-10-22 when the
+#: anthropic default moved to claude-haiku-5-5 — the startup verification sent
+#: temperature=0.0, got the 400, and took the whole service down with it. Sending
+#: no temperature is safe for these models; they are deterministic enough for the
+#: structured extraction done here, and the parameter is simply not accepted.
+REJECTS_TEMPERATURE: tuple[str, ...] = (
+    "claude-opus-4-8",
+    "claude-haiku-5",
+    "claude-sonnet-5",
+    "claude-opus-5",
+    "claude-fable-5",
+)
+
 
 class AnthropicLLM(LLMInterface):
     """
@@ -368,7 +382,7 @@ class AnthropicLLM(LLMInterface):
         if system_prompt:
             call_params["system"] = system_prompt
 
-        if temperature is not None:
+        if temperature is not None and not self.model.startswith(REJECTS_TEMPERATURE):
             call_params["temperature"] = temperature
 
         last_exception = None
@@ -625,7 +639,7 @@ class AnthropicLLM(LLMInterface):
         if system_prompt:
             call_params["system"] = system_prompt
 
-        if temperature is not None:
+        if temperature is not None and not self.model.startswith(REJECTS_TEMPERATURE):
             call_params["temperature"] = temperature
 
         last_exception = None
