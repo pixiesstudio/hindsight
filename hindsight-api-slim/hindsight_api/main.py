@@ -245,6 +245,7 @@ def main():
             log_format=config.log_format,
             llm_invalid_json_dump_dir=config.llm_invalid_json_dump_dir,
             llm_anthropic_thinking=config.llm_anthropic_thinking,
+            llm_anthropic_effort=config.llm_anthropic_effort,
             mcp_enabled=config.mcp_enabled,
             mcp_enabled_tools=config.mcp_enabled_tools,
             enable_bank_config_api=config.enable_bank_config_api,

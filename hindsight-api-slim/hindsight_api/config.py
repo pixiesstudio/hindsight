@@ -248,6 +248,7 @@ ENV_LOG_LEVEL = "HINDSIGHT_API_LOG_LEVEL"
 ENV_LOG_FORMAT = "HINDSIGHT_API_LOG_FORMAT"
 ENV_LLM_INVALID_JSON_DUMP_DIR = "HINDSIGHT_API_LLM_INVALID_JSON_DUMP_DIR"
 ENV_LLM_ANTHROPIC_THINKING = "HINDSIGHT_API_LLM_ANTHROPIC_THINKING"
+ENV_LLM_ANTHROPIC_EFFORT = "HINDSIGHT_API_LLM_ANTHROPIC_EFFORT"
 ENV_WORKERS = "HINDSIGHT_API_WORKERS"
 ENV_MCP_ENABLED = "HINDSIGHT_API_MCP_ENABLED"
 ENV_MCP_ENABLED_TOOLS = "HINDSIGHT_API_MCP_ENABLED_TOOLS"
@@ -488,6 +489,11 @@ DEFAULT_LLM_INVALID_JSON_DUMP_DIR = "~/.local/share/hindsight/logs/llm-invalid-j
 # "disabled" with a 400, which the startup verification call surfaces at once.
 DEFAULT_LLM_ANTHROPIC_THINKING = "disabled"
 ALLOWED_LLM_ANTHROPIC_THINKING = ("disabled", "model_default")
+# Effort for Anthropic call(): sent as output_config.effort, "model_default" omits it
+# (claude-haiku-5-5 then runs at medium). xhigh and max are left out on purpose:
+# with thinking disabled they return a 400.
+DEFAULT_LLM_ANTHROPIC_EFFORT = "model_default"
+ALLOWED_LLM_ANTHROPIC_EFFORT = ("model_default", "low", "medium", "high")
 DEFAULT_WORKERS = 1
 DEFAULT_MCP_ENABLED = True
 DEFAULT_MCP_ENABLED_TOOLS: list[str] | None = None  # None = all tools enabled
@@ -823,6 +829,7 @@ class HindsightConfig:
     log_format: str
     llm_invalid_json_dump_dir: str
     llm_anthropic_thinking: str
+    llm_anthropic_effort: str
     mcp_enabled: bool
     mcp_enabled_tools: list[str] | None  # None = all tools; explicit list = allowlist
     enable_bank_config_api: bool
@@ -1091,6 +1098,12 @@ class HindsightConfig:
             raise ValueError(
                 f"{ENV_LLM_ANTHROPIC_THINKING} must be one of: {', '.join(ALLOWED_LLM_ANTHROPIC_THINKING)} "
                 f"(got {self.llm_anthropic_thinking!r})"
+            )
+
+        if self.llm_anthropic_effort not in ALLOWED_LLM_ANTHROPIC_EFFORT:
+            raise ValueError(
+                f"{ENV_LLM_ANTHROPIC_EFFORT} must be one of: {', '.join(ALLOWED_LLM_ANTHROPIC_EFFORT)} "
+                f"(got {self.llm_anthropic_effort!r})"
             )
 
         # RETAIN_MAX_COMPLETION_TOKENS must be greater than RETAIN_CHUNK_SIZE
@@ -1413,6 +1426,7 @@ class HindsightConfig:
             log_format=os.getenv(ENV_LOG_FORMAT, DEFAULT_LOG_FORMAT).lower(),
             llm_invalid_json_dump_dir=os.getenv(ENV_LLM_INVALID_JSON_DUMP_DIR, DEFAULT_LLM_INVALID_JSON_DUMP_DIR),
             llm_anthropic_thinking=os.getenv(ENV_LLM_ANTHROPIC_THINKING, DEFAULT_LLM_ANTHROPIC_THINKING),
+            llm_anthropic_effort=os.getenv(ENV_LLM_ANTHROPIC_EFFORT, DEFAULT_LLM_ANTHROPIC_EFFORT),
             mcp_enabled=os.getenv(ENV_MCP_ENABLED, str(DEFAULT_MCP_ENABLED)).lower()
             == "true",
             mcp_enabled_tools=(

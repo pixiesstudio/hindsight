@@ -109,6 +109,7 @@ class AnthropicLLM(LLMInterface):
         timeout: float = 300.0,
         invalid_json_dump_dir: str | None = None,
         thinking: str | None = None,
+        effort: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -127,11 +128,16 @@ class AnthropicLLM(LLMInterface):
             thinking: "disabled" sends ``thinking={"type": "disabled"}`` in call(),
                 "model_default" omits it. None = ``HINDSIGHT_API_LLM_ANTHROPIC_THINKING``
                 from the global config, resolved lazily at the first call.
+            effort: "low"/"medium"/"high" sends ``output_config.effort`` in call()
+                (via ``extra_body``, SDK 0.75.0 has no such argument), "model_default"
+                omits it. None = ``HINDSIGHT_API_LLM_ANTHROPIC_EFFORT`` from the global
+                config, resolved lazily at the first call.
             **kwargs: Additional provider-specific parameters.
         """
         super().__init__(provider, api_key, base_url, model, reasoning_effort, **kwargs)
         self._invalid_json_dump_dir = invalid_json_dump_dir
         self._thinking = thinking
+        self._effort = effort
 
         if not self.api_key:
             raise ValueError("API key is required for Anthropic provider")
@@ -158,6 +164,14 @@ class AnthropicLLM(LLMInterface):
 
             self._thinking = get_config().llm_anthropic_thinking
         return self._thinking
+
+    def _effort_mode(self) -> str:
+        """Effort for call(); None in the constructor reads the global config once."""
+        if self._effort is None:
+            from hindsight_api.config import get_config
+
+            self._effort = get_config().llm_anthropic_effort
+        return self._effort
 
     @classmethod
     def _extract_json(cls, content: str) -> Any:
@@ -400,6 +414,10 @@ class AnthropicLLM(LLMInterface):
 
         if self._thinking_mode() == "disabled":
             call_params["thinking"] = {"type": "disabled"}
+
+        effort = self._effort_mode()
+        if effort != "model_default":
+            call_params["extra_body"] = {"output_config": {"effort": effort}}
 
         last_exception = None
         # Recovery state for invalid-JSON retries (see JSON_ONLY_NUDGE /
