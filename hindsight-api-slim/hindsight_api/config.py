@@ -247,6 +247,7 @@ ENV_BASE_PATH = "HINDSIGHT_API_BASE_PATH"
 ENV_LOG_LEVEL = "HINDSIGHT_API_LOG_LEVEL"
 ENV_LOG_FORMAT = "HINDSIGHT_API_LOG_FORMAT"
 ENV_LLM_INVALID_JSON_DUMP_DIR = "HINDSIGHT_API_LLM_INVALID_JSON_DUMP_DIR"
+ENV_LLM_ANTHROPIC_THINKING = "HINDSIGHT_API_LLM_ANTHROPIC_THINKING"
 ENV_WORKERS = "HINDSIGHT_API_WORKERS"
 ENV_MCP_ENABLED = "HINDSIGHT_API_MCP_ENABLED"
 ENV_MCP_ENABLED_TOOLS = "HINDSIGHT_API_MCP_ENABLED_TOOLS"
@@ -479,6 +480,14 @@ DEFAULT_LOG_FORMAT = "text"  # Options: "text", "json"
 # Full dumps of LLM responses that never parsed as JSON (AnthropicLLM). Lives next
 # to hindsight.log (start.sh LOG_DIR) so one directory holds all diagnostics.
 DEFAULT_LLM_INVALID_JSON_DUMP_DIR = "~/.local/share/hindsight/logs/llm-invalid-json"
+# Thinking for Anthropic call(): "disabled" sends thinking={"type": "disabled"},
+# "model_default" omits the parameter. claude-haiku-5-5 thinks by default and bills
+# thinking as output tokens; measured 2026-10-23 in the invalid-JSON dumps: 4096
+# output tokens for 0 characters of text, 4096 for 417. Hindsight ran without
+# thinking on Haiku 4.5. Models with always-on thinking (Opus 5.5, Fable) reject
+# "disabled" with a 400, which the startup verification call surfaces at once.
+DEFAULT_LLM_ANTHROPIC_THINKING = "disabled"
+ALLOWED_LLM_ANTHROPIC_THINKING = ("disabled", "model_default")
 DEFAULT_WORKERS = 1
 DEFAULT_MCP_ENABLED = True
 DEFAULT_MCP_ENABLED_TOOLS: list[str] | None = None  # None = all tools enabled
@@ -813,6 +822,7 @@ class HindsightConfig:
     log_level: str
     log_format: str
     llm_invalid_json_dump_dir: str
+    llm_anthropic_thinking: str
     mcp_enabled: bool
     mcp_enabled_tools: list[str] | None  # None = all tools; explicit list = allowlist
     enable_bank_config_api: bool
@@ -1075,6 +1085,12 @@ class HindsightConfig:
         if self.text_search_extension not in valid_text_search:
             raise ValueError(
                 f"Invalid text_search_extension: {self.text_search_extension}. Must be one of: {', '.join(valid_text_search)}"
+            )
+
+        if self.llm_anthropic_thinking not in ALLOWED_LLM_ANTHROPIC_THINKING:
+            raise ValueError(
+                f"{ENV_LLM_ANTHROPIC_THINKING} must be one of: {', '.join(ALLOWED_LLM_ANTHROPIC_THINKING)} "
+                f"(got {self.llm_anthropic_thinking!r})"
             )
 
         # RETAIN_MAX_COMPLETION_TOKENS must be greater than RETAIN_CHUNK_SIZE
@@ -1396,6 +1412,7 @@ class HindsightConfig:
             log_level=os.getenv(ENV_LOG_LEVEL, DEFAULT_LOG_LEVEL),
             log_format=os.getenv(ENV_LOG_FORMAT, DEFAULT_LOG_FORMAT).lower(),
             llm_invalid_json_dump_dir=os.getenv(ENV_LLM_INVALID_JSON_DUMP_DIR, DEFAULT_LLM_INVALID_JSON_DUMP_DIR),
+            llm_anthropic_thinking=os.getenv(ENV_LLM_ANTHROPIC_THINKING, DEFAULT_LLM_ANTHROPIC_THINKING),
             mcp_enabled=os.getenv(ENV_MCP_ENABLED, str(DEFAULT_MCP_ENABLED)).lower()
             == "true",
             mcp_enabled_tools=(

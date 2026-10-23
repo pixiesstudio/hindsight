@@ -171,6 +171,7 @@ To switch between backends:
 | `HINDSIGHT_API_LLM_TIMEOUT` | LLM request timeout in seconds | `120` |
 | `HINDSIGHT_API_LLM_GROQ_SERVICE_TIER` | Groq service tier: `on_demand`, `flex`, `auto` | `auto` |
 | `HINDSIGHT_API_LLM_OPENAI_SERVICE_TIER` | OpenAI service tier: `flex` for 50% cost savings (OpenAI Flex Processing) | None (default) |
+| `HINDSIGHT_API_LLM_ANTHROPIC_THINKING` | Anthropic thinking for non-tool calls: `disabled` sends `thinking={"type": "disabled"}`, `model_default` omits the parameter. Claude Haiku 5.5 thinks by default and bills thinking as output tokens. Models with always-on thinking (Opus 5.5, Fable) need `model_default`. | `disabled` |
 
 **Provider Examples**
 
