@@ -491,8 +491,13 @@ DEFAULT_LLM_ANTHROPIC_THINKING = "disabled"
 ALLOWED_LLM_ANTHROPIC_THINKING = ("disabled", "model_default")
 # Effort for Anthropic call(): sent as output_config.effort, "model_default" omits it
 # (claude-haiku-5-5 then runs at medium). xhigh and max are left out on purpose:
-# with thinking disabled they return a 400.
-DEFAULT_LLM_ANTHROPIC_EFFORT = "model_default"
+# with thinking disabled they return a 400. Default "high" measured 2026-10-23 on the
+# real fact-extraction path (20 newest retain documents, 33 chunks per variant):
+# claude-haiku-5-5 high + thinking disabled = 33/33 clean JSON on the first attempt,
+# 53296 output tokens (Haiku 4.5: 46670), 5.5 facts per chunk (Haiku 4.5: 5.9),
+# 0.00132 USD per chunk (Haiku 4.5: 0.01110). High WITH thinking used 103511 tokens.
+# Models without effort support (Haiku 4.5 and older) need "model_default".
+DEFAULT_LLM_ANTHROPIC_EFFORT = "high"
 ALLOWED_LLM_ANTHROPIC_EFFORT = ("model_default", "low", "medium", "high")
 DEFAULT_WORKERS = 1
 DEFAULT_MCP_ENABLED = True

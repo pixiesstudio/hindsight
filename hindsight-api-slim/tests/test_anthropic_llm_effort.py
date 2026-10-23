@@ -87,7 +87,11 @@ async def test_effort_high_and_thinking_disabled_are_sent_together():
 
 @pytest.mark.parametrize(
     ("env_value", "expected_extra_body"),
-    [(None, None), ("model_default", None), ("low", {"output_config": {"effort": "low"}})],
+    [
+        (None, {"output_config": {"effort": "high"}}),
+        ("model_default", None),
+        ("low", {"output_config": {"effort": "low"}}),
+    ],
 )
 async def test_unset_constructor_value_resolves_from_global_config(env_value, expected_extra_body):
     os.environ["HINDSIGHT_API_LLM_PROVIDER"] = "mock"
@@ -102,7 +106,7 @@ async def test_unset_constructor_value_resolves_from_global_config(env_value, ex
     assert create.await_args.kwargs.get("extra_body") == expected_extra_body
 
 
-def test_config_default_is_model_default():
+def test_config_default_is_high():
     from hindsight_api.config import DEFAULT_LLM_ANTHROPIC_EFFORT, HindsightConfig
 
     os.environ.pop("HINDSIGHT_API_LLM_ANTHROPIC_EFFORT", None)
@@ -110,8 +114,8 @@ def test_config_default_is_model_default():
 
     config = HindsightConfig.from_env()
 
-    assert DEFAULT_LLM_ANTHROPIC_EFFORT == "model_default"
-    assert config.llm_anthropic_effort == "model_default"
+    assert DEFAULT_LLM_ANTHROPIC_EFFORT == "high"
+    assert config.llm_anthropic_effort == "high"
 
 
 @pytest.mark.parametrize("bad_value", ["max", "xhigh", "High", ""])
