@@ -319,6 +319,7 @@ ENV_FILE_DELETE_AFTER_RETAIN = "HINDSIGHT_API_FILE_DELETE_AFTER_RETAIN"
 ENV_ENABLE_OBSERVATIONS = "HINDSIGHT_API_ENABLE_OBSERVATIONS"
 ENV_CONSOLIDATION_BATCH_SIZE = "HINDSIGHT_API_CONSOLIDATION_BATCH_SIZE"
 ENV_CONSOLIDATION_LLM_BATCH_SIZE = "HINDSIGHT_API_CONSOLIDATION_LLM_BATCH_SIZE"
+ENV_CONSOLIDATION_MAX_COMPLETION_TOKENS = "HINDSIGHT_API_CONSOLIDATION_MAX_COMPLETION_TOKENS"
 ENV_CONSOLIDATION_MAX_TOKENS = "HINDSIGHT_API_CONSOLIDATION_MAX_TOKENS"
 ENV_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS = (
     "HINDSIGHT_API_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS"
@@ -555,6 +556,12 @@ DEFAULT_CONSOLIDATION_BATCH_SIZE = (
 DEFAULT_CONSOLIDATION_LLM_BATCH_SIZE = (
     8  # Facts per LLM call (1 = no batching; >1 = batch mode)
 )
+# Output budget for the consolidation LLM call. Without it the Anthropic provider
+# falls back to 4096 and cuts the JSON: on claude-haiku-5-5 consolidation answers
+# measured median 3403, p95 5486, max 6160 output tokens (43 slow calls, 2026-10-23),
+# 12 calls were truncated at 4096 and paid twice. Same ceiling as retain extraction;
+# the cap is not billed, only generated tokens are.
+DEFAULT_CONSOLIDATION_MAX_COMPLETION_TOKENS = 64000
 DEFAULT_CONSOLIDATION_MAX_TOKENS = (
     512  # Max tokens for recall when finding related observations
 )
@@ -875,6 +882,7 @@ class HindsightConfig:
     enable_mental_model_history: bool
     consolidation_batch_size: int
     consolidation_llm_batch_size: int
+    consolidation_max_completion_tokens: int
     consolidation_max_tokens: int
     consolidation_source_facts_max_tokens: int
     consolidation_source_facts_max_tokens_per_observation: int
@@ -1550,6 +1558,12 @@ class HindsightConfig:
                 os.getenv(
                     ENV_CONSOLIDATION_LLM_BATCH_SIZE,
                     str(DEFAULT_CONSOLIDATION_LLM_BATCH_SIZE),
+                )
+            ),
+            consolidation_max_completion_tokens=int(
+                os.getenv(
+                    ENV_CONSOLIDATION_MAX_COMPLETION_TOKENS,
+                    str(DEFAULT_CONSOLIDATION_MAX_COMPLETION_TOKENS),
                 )
             ),
             consolidation_max_tokens=int(

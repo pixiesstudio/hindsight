@@ -288,6 +288,7 @@ def main():
             enable_mental_model_history=config.enable_mental_model_history,
             consolidation_batch_size=config.consolidation_batch_size,
             consolidation_llm_batch_size=config.consolidation_llm_batch_size,
+            consolidation_max_completion_tokens=config.consolidation_max_completion_tokens,
             consolidation_max_tokens=config.consolidation_max_tokens,
             consolidation_source_facts_max_tokens=config.consolidation_source_facts_max_tokens,
             consolidation_source_facts_max_tokens_per_observation=config.consolidation_source_facts_max_tokens_per_observation,

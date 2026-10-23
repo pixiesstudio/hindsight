@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, field_validator
 
-from ...config import get_config
+from ...config import DEFAULT_CONSOLIDATION_MAX_COMPLETION_TOKENS, get_config
 from ..llm_wrapper import sanitize_llm_output
 from ..memory_engine import fq_table
 from ..retain import embedding_utils
@@ -1107,6 +1107,12 @@ async def _consolidate_batch_with_llm(
     facts_lines = "\n".join(_fact_line(m) for m in memories)
 
     observations_mission = config.observations_mission if config is not None else None
+    # Explicit output budget: the provider fallback (4096) truncated the JSON answer.
+    max_completion_tokens = (
+        config.consolidation_max_completion_tokens
+        if config is not None
+        else DEFAULT_CONSOLIDATION_MAX_COMPLETION_TOKENS
+    )
     prompt_template = build_batch_consolidation_prompt(observations_mission)
     prompt = prompt_template.format(
         facts_text=facts_lines,
@@ -1120,6 +1126,7 @@ async def _consolidate_batch_with_llm(
             response: _ConsolidationBatchResponse = await llm_config.call(
                 messages=[{"role": "user", "content": prompt}],
                 response_format=_ConsolidationBatchResponse,
+                max_completion_tokens=max_completion_tokens,
                 scope="consolidation",
             )
             return _BatchLLMResult(
