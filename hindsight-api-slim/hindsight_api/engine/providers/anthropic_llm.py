@@ -39,6 +39,16 @@ REJECTS_TEMPERATURE: tuple[str, ...] = (
 )
 
 
+class AnthropicRefusalError(ValueError):
+    """The model answered a JSON request with ``stop_reason == "refusal"``.
+
+    Structured outputs guarantee the schema for every stop reason except refusal and
+    max_tokens (Anthropic docs, structured outputs). A refusal repeats on the identical
+    request, so it is raised at once instead of paying for up to ``max_retries`` retries.
+    Subclasses ValueError, which callers already handle for unparseable answers.
+    """
+
+
 class AnthropicLLM(LLMInterface):
     """
     LLM provider using Anthropic's Claude models.
@@ -110,6 +120,7 @@ class AnthropicLLM(LLMInterface):
         invalid_json_dump_dir: str | None = None,
         thinking: str | None = None,
         effort: str | None = None,
+        structured_output_scopes: tuple[str, ...] | None = None,
         **kwargs: Any,
     ):
         """
@@ -132,12 +143,17 @@ class AnthropicLLM(LLMInterface):
                 (via ``extra_body``, SDK 0.75.0 has no such argument), "model_default"
                 omits it. None = ``HINDSIGHT_API_LLM_ANTHROPIC_EFFORT`` from the global
                 config, resolved lazily at the first call.
+            structured_output_scopes: call() scopes that send the response schema as
+                ``output_config.format`` (structured outputs) instead of as prompt text.
+                () = prompt text everywhere. None = ``HINDSIGHT_API_LLM_ANTHROPIC_
+                STRUCTURED_OUTPUT_SCOPES`` from the global config, resolved lazily.
             **kwargs: Additional provider-specific parameters.
         """
         super().__init__(provider, api_key, base_url, model, reasoning_effort, **kwargs)
         self._invalid_json_dump_dir = invalid_json_dump_dir
         self._thinking = thinking
         self._effort = effort
+        self._structured_output_scopes = structured_output_scopes
 
         if not self.api_key:
             raise ValueError("API key is required for Anthropic provider")
@@ -172,6 +188,14 @@ class AnthropicLLM(LLMInterface):
 
             self._effort = get_config().llm_anthropic_effort
         return self._effort
+
+    def _structured_output_scopes_mode(self) -> tuple[str, ...]:
+        """Scopes that send output_config.format; None in the constructor reads the global config once."""
+        if self._structured_output_scopes is None:
+            from hindsight_api.config import get_config
+
+            self._structured_output_scopes = get_config().llm_anthropic_structured_output_scopes
+        return self._structured_output_scopes
 
     @classmethod
     def _extract_json(cls, content: str) -> Any:
@@ -390,8 +414,11 @@ class AnthropicLLM(LLMInterface):
             else:
                 anthropic_messages.append({"role": role, "content": content})
 
-        # Add JSON schema instruction if response_format is provided
-        if response_format is not None and hasattr(response_format, "model_json_schema"):
+        # The schema goes either into output_config.format (structured outputs, the API
+        # enforces it) or, for scopes outside the configured list, into the system prompt.
+        has_schema = response_format is not None and hasattr(response_format, "model_json_schema")
+        send_format = has_schema and scope in self._structured_output_scopes_mode()
+        if has_schema and not send_format:
             schema = response_format.model_json_schema()
             schema_msg = f"\n\nYou must respond with valid JSON matching this schema:\n{json.dumps(schema, indent=2)}"
             if system_prompt:
@@ -415,9 +442,21 @@ class AnthropicLLM(LLMInterface):
         if self._thinking_mode() == "disabled":
             call_params["thinking"] = {"type": "disabled"}
 
+        output_config: dict[str, Any] = {}
         effort = self._effort_mode()
         if effort != "model_default":
-            call_params["extra_body"] = {"output_config": {"effort": effort}}
+            output_config["effort"] = effort
+        if send_format:
+            # The SDK's own helper for messages.parse: moves constraints the API does not
+            # accept (minimum, maxLength, ...) into descriptions, sets additionalProperties.
+            from anthropic.lib._parse._transform import transform_schema
+
+            output_config["format"] = {
+                "type": "json_schema",
+                "schema": transform_schema(response_format.model_json_schema()),
+            }
+        if output_config:
+            call_params["extra_body"] = {"output_config": output_config}
 
         last_exception = None
         # Recovery state for invalid-JSON retries (see JSON_ONLY_NUDGE /
@@ -437,6 +476,16 @@ class AnthropicLLM(LLMInterface):
                 for block in response.content:
                     if block.type == "text":
                         content += block.text
+
+                if response_format is not None and getattr(response, "stop_reason", None) == "refusal":
+                    refused_usage = getattr(response, "usage", None)
+                    message = (
+                        f"Anthropic refused the request (scope={scope}, stop_reason=refusal, "
+                        f"output_tokens={(refused_usage.output_tokens or 0) if refused_usage else 0}, "
+                        f"text_head={content[: self.INVALID_JSON_TEXT_HEAD_CHARS]!r})"
+                    )
+                    logger.error(message)
+                    raise AnthropicRefusalError(message)
 
                 if response_format is not None:
                     json_data = self._extract_json(content)
@@ -575,6 +624,9 @@ class AnthropicLLM(LLMInterface):
 
                 logger.error(f"Anthropic API error after {max_retries + 1} attempts: {str(e)}")
                 raise
+
+            except AnthropicRefusalError:
+                raise  # already logged with scope and text head; a retry would repeat the refusal
 
             except Exception as e:
                 logger.error(f"Unexpected error during Anthropic call: {type(e).__name__}: {str(e)}")

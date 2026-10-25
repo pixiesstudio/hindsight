@@ -246,6 +246,7 @@ def main():
             llm_invalid_json_dump_dir=config.llm_invalid_json_dump_dir,
             llm_anthropic_thinking=config.llm_anthropic_thinking,
             llm_anthropic_effort=config.llm_anthropic_effort,
+            llm_anthropic_structured_output_scopes=config.llm_anthropic_structured_output_scopes,
             mcp_enabled=config.mcp_enabled,
             mcp_enabled_tools=config.mcp_enabled_tools,
             enable_bank_config_api=config.enable_bank_config_api,

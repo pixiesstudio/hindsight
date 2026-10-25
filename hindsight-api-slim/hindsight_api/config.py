@@ -7,6 +7,7 @@ All environment variables and their defaults are defined here.
 import json
 import logging
 import os
+import re
 import sys
 from dataclasses import dataclass, field, fields
 from datetime import datetime, timezone
@@ -249,6 +250,7 @@ ENV_LOG_FORMAT = "HINDSIGHT_API_LOG_FORMAT"
 ENV_LLM_INVALID_JSON_DUMP_DIR = "HINDSIGHT_API_LLM_INVALID_JSON_DUMP_DIR"
 ENV_LLM_ANTHROPIC_THINKING = "HINDSIGHT_API_LLM_ANTHROPIC_THINKING"
 ENV_LLM_ANTHROPIC_EFFORT = "HINDSIGHT_API_LLM_ANTHROPIC_EFFORT"
+ENV_LLM_ANTHROPIC_STRUCTURED_OUTPUT_SCOPES = "HINDSIGHT_API_LLM_ANTHROPIC_STRUCTURED_OUTPUT_SCOPES"
 ENV_WORKERS = "HINDSIGHT_API_WORKERS"
 ENV_MCP_ENABLED = "HINDSIGHT_API_MCP_ENABLED"
 ENV_MCP_ENABLED_TOOLS = "HINDSIGHT_API_MCP_ENABLED_TOOLS"
@@ -499,6 +501,15 @@ ALLOWED_LLM_ANTHROPIC_THINKING = ("disabled", "model_default")
 # Models without effort support (Haiku 4.5 and older) need "model_default".
 DEFAULT_LLM_ANTHROPIC_EFFORT = "high"
 ALLOWED_LLM_ANTHROPIC_EFFORT = ("model_default", "low", "medium", "high")
+# Scopes whose Anthropic call() sends output_config.format (structured outputs) instead of
+# asking for JSON in the system prompt. Measured 2026-10-24 on claude-haiku-5-5, real
+# production paths (MIRA spikes hindsight-json-*): fact extraction strict JSON 1728/1728
+# with the format vs 5-7/108 when only asked, consolidation 72/72 vs 34/36, 0 paid retries,
+# 6-10 % cheaper because the schema text is dropped, facts and language unchanged or better.
+# reflect_structured stays on the prompt path: its schema is built from caller input that
+# the API may reject (e.g. recursion). An empty value restores the prompt path everywhere.
+DEFAULT_LLM_ANTHROPIC_STRUCTURED_OUTPUT_SCOPES = ("retain_extract_facts", "consolidation")
+LLM_ANTHROPIC_STRUCTURED_OUTPUT_SCOPE_PATTERN = re.compile(r"[a-z][a-z0-9_]*")
 DEFAULT_WORKERS = 1
 DEFAULT_MCP_ENABLED = True
 DEFAULT_MCP_ENABLED_TOOLS: list[str] | None = None  # None = all tools enabled
@@ -835,6 +846,7 @@ class HindsightConfig:
     llm_invalid_json_dump_dir: str
     llm_anthropic_thinking: str
     llm_anthropic_effort: str
+    llm_anthropic_structured_output_scopes: tuple[str, ...]
     mcp_enabled: bool
     mcp_enabled_tools: list[str] | None  # None = all tools; explicit list = allowlist
     enable_bank_config_api: bool
@@ -1109,6 +1121,17 @@ class HindsightConfig:
             raise ValueError(
                 f"{ENV_LLM_ANTHROPIC_EFFORT} must be one of: {', '.join(ALLOWED_LLM_ANTHROPIC_EFFORT)} "
                 f"(got {self.llm_anthropic_effort!r})"
+            )
+
+        bad_scopes = [
+            scope
+            for scope in self.llm_anthropic_structured_output_scopes
+            if not LLM_ANTHROPIC_STRUCTURED_OUTPUT_SCOPE_PATTERN.fullmatch(scope)
+        ]
+        if bad_scopes:
+            raise ValueError(
+                f"{ENV_LLM_ANTHROPIC_STRUCTURED_OUTPUT_SCOPES} must be a comma-separated list of lowercase "
+                f"scope names like 'retain_extract_facts' (got {bad_scopes!r})"
             )
 
         # RETAIN_MAX_COMPLETION_TOKENS must be greater than RETAIN_CHUNK_SIZE
@@ -1432,6 +1455,14 @@ class HindsightConfig:
             llm_invalid_json_dump_dir=os.getenv(ENV_LLM_INVALID_JSON_DUMP_DIR, DEFAULT_LLM_INVALID_JSON_DUMP_DIR),
             llm_anthropic_thinking=os.getenv(ENV_LLM_ANTHROPIC_THINKING, DEFAULT_LLM_ANTHROPIC_THINKING),
             llm_anthropic_effort=os.getenv(ENV_LLM_ANTHROPIC_EFFORT, DEFAULT_LLM_ANTHROPIC_EFFORT),
+            llm_anthropic_structured_output_scopes=tuple(
+                _parse_str_list(
+                    os.getenv(
+                        ENV_LLM_ANTHROPIC_STRUCTURED_OUTPUT_SCOPES,
+                        ",".join(DEFAULT_LLM_ANTHROPIC_STRUCTURED_OUTPUT_SCOPES),
+                    )
+                )
+            ),
             mcp_enabled=os.getenv(ENV_MCP_ENABLED, str(DEFAULT_MCP_ENABLED)).lower()
             == "true",
             mcp_enabled_tools=(
