@@ -1146,7 +1146,7 @@ async def _extract_facts_from_chunk(
                     f"LLM response missing 'facts' field or returned empty list. "
                     f"Response: {extraction_response_json}. "
                     f"Input: "
-                    f"date: {event_date.isoformat()}, "
+                    f"date: {event_date.isoformat() if event_date is not None else 'unknown'}, "
                     f"context: {context if context else 'none'}, "
                     f"text: {chunk}"
                 )
