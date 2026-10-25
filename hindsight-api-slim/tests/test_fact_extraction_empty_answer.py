@@ -33,6 +33,7 @@ def _make_config():
     cfg.retain_extraction_mode = "concise"
     cfg.retain_extract_causal_links = False
     cfg.retain_mission = None
+    cfg.retain_language_hint = False
     return cfg
 
 

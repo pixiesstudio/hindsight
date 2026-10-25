@@ -260,6 +260,7 @@ def main():
             retain_extract_causal_links=config.retain_extract_causal_links,
             retain_extraction_mode=config.retain_extraction_mode,
             retain_mission=config.retain_mission,
+            retain_language_hint=config.retain_language_hint,
             retain_custom_instructions=config.retain_custom_instructions,
             retain_default_strategy=config.retain_default_strategy,
             retain_strategies=config.retain_strategies,

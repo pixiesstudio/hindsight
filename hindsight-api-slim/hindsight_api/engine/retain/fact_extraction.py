@@ -974,6 +974,40 @@ def _build_extraction_prompt_and_schema(config) -> tuple[str, type]:
     return prompt, response_schema
 
 
+#: Function words that tell German from English text. The same lists and rule were used
+#: for every language measurement of the 2026-10-24/25 MIRA spikes (hindsight-json-*,
+#: hindsight-thinking-with-schema): a text is German/English when it has at least
+#: _LANGUAGE_MIN_FUNCTION_WORDS of that language's words and more than of the other.
+_GERMAN_FUNCTION_WORDS = frozenset(
+    "der die das und ist nicht mit für auf ein eine einen einem dem den des sich auch als wird werden wurde "
+    "nach bei von zu im zum zur aus wenn dass oder aber noch nur kein keine sind hat haben über unter durch "
+    "ohne um vor weil statt sowie bereits jetzt immer".split()
+)
+_ENGLISH_FUNCTION_WORDS = frozenset(
+    "the and is are was were not with for on a an of to in that this it be by from as or but if when has have "
+    "had no only which into than then also because instead already now always".split()
+)
+_LANGUAGE_MIN_FUNCTION_WORDS = 2
+_LANGUAGE_WORD_RE = re.compile(r"[a-zäöüß]+")
+#: Appended to the extraction request; worded exactly as measured (1.000 language fidelity).
+_LANGUAGE_HINTS = {
+    "de": "Sprache des Texts: Deutsch. Schreibe alle Fakten auf Deutsch.",
+    "en": "Language of the text: English. Write all facts in English.",
+}
+
+
+def _detect_text_language(text: str) -> str | None:
+    """Return "de" or "en" by counting function words, None when the text is unclear."""
+    words = _LANGUAGE_WORD_RE.findall(text.lower())
+    german = sum(word in _GERMAN_FUNCTION_WORDS for word in words)
+    english = sum(word in _ENGLISH_FUNCTION_WORDS for word in words)
+    if german >= _LANGUAGE_MIN_FUNCTION_WORDS and german > english:
+        return "de"
+    if english >= _LANGUAGE_MIN_FUNCTION_WORDS and english > german:
+        return "en"
+    return None
+
+
 def _build_user_message(
     chunk: str,
     chunk_index: int,
@@ -981,8 +1015,13 @@ def _build_user_message(
     event_date: datetime | None,
     context: str,
     metadata: dict[str, str] | None = None,
+    language_hint: bool = False,
 ) -> str:
-    """Build user message for fact extraction."""
+    """Build user message for fact extraction.
+
+    With ``language_hint`` the detected language of the chunk is named in a last line
+    (``HINDSIGHT_API_RETAIN_LANGUAGE_HINT``); unclear text gets no line.
+    """
     from .orchestrator import parse_datetime_flexible
 
     sanitized_chunk = _sanitize_text(chunk)
@@ -1001,6 +1040,12 @@ def _build_user_message(
         metadata_lines = "\n".join(f"  {k}: {v}" for k, v in metadata.items())
         metadata_section = f"\nMetadata:\n{metadata_lines}"
 
+    language_section = ""
+    if language_hint:
+        language = _detect_text_language(sanitized_chunk or "")
+        if language is not None:
+            language_section = f"\n\n{_LANGUAGE_HINTS[language]}"
+
     return f"""Extract facts from the following text chunk.
 
 Chunk: {chunk_index + 1}/{total_chunks}
@@ -1008,7 +1053,7 @@ Event Date: {event_date_str}
 Context: {sanitized_context}{metadata_section}
 
 Text:
-{sanitized_chunk}"""
+{sanitized_chunk}{language_section}"""
 
 
 def _build_request_body(
@@ -1078,7 +1123,13 @@ async def _extract_facts_from_chunk(
 
     # Build user message using helper function
     user_message = _build_user_message(
-        chunk, chunk_index, total_chunks, event_date, context, metadata
+        chunk,
+        chunk_index,
+        total_chunks,
+        event_date,
+        context,
+        metadata,
+        language_hint=config.retain_language_hint,
     )
 
     # Retry logic for JSON validation errors
@@ -1730,6 +1781,7 @@ async def extract_facts_from_contents_batch_api(
                 item.event_date,
                 item.context,
                 item.metadata or None,
+                language_hint=config.retain_language_hint,
             )
 
             # Build request body using helper function
