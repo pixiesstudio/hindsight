@@ -2,11 +2,12 @@
 Tests for the token budget of consolidation's related-observation recall.
 
 Consolidation looks up existing observations similar to each new fact and hands
-them to the LLM. With the former default of 512 tokens that lookup was cut short
-almost always: over 497 live consolidation recalls (2026-10-25 to 2026-11-01)
-the result had median 473 tokens, 85 % reached 400 or more. Replaying 60 real
-facts without the cap (2026-11-01) gave median 670 and max 995 tokens, never
-more than 1024, so 4096 (the server's own recall default) cuts none of them.
+them to the LLM. That lookup runs quiet and never appears in the log, so it was
+replayed (2026-11-01) with its exact shape: 60 real facts as query, their tags
+with all_strict, observations only, budget 300. At the former default of 512
+tokens the result had median 476 tokens and 57 of 60 lookups were cut; without
+the cap median 670 and max 995 tokens, never more than 1024, so 4096 (the
+server's own recall default) cuts none of them.
 """
 
 import os
