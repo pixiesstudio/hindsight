@@ -601,9 +601,12 @@ DEFAULT_CONSOLIDATION_LLM_BATCH_SIZE = (
 # 12 calls were truncated at 4096 and paid twice. Same ceiling as retain extraction;
 # the cap is not billed, only generated tokens are.
 DEFAULT_CONSOLIDATION_MAX_COMPLETION_TOKENS = 64000
-DEFAULT_CONSOLIDATION_MAX_TOKENS = (
-    512  # Max tokens for recall when finding related observations
-)
+# Token budget of the recall that finds observations related to a new fact. 512 cut that
+# lookup almost always: 497 live recalls (2026-10-25..11-01) returned median 473 tokens, 85 %
+# reached 400+. Replaying 60 real facts uncapped (2026-11-01) gave median 670, max 995, none
+# above 1024 (the all_strict tag scope bounds the pool), so 4096 - the recall default - cuts none.
+# Cost: about one more observation plus its source facts per consolidation call (~450 tokens).
+DEFAULT_CONSOLIDATION_MAX_TOKENS = 4096
 DEFAULT_CONSOLIDATION_SOURCE_FACTS_MAX_TOKENS = (
     -1
 )  # Total token budget for source facts in consolidation recall (-1 = unlimited)
